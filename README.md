@@ -16,7 +16,7 @@ Download **`HYPERIA Setup <version>.exe`** from [Releases](../../releases/latest
 ## Build (Windows)
 ```
 pip install pyinstaller pywebview
-pyinstaller --onedir --noconsole --name HYPERIA --icon logo.ico --version-file version.txt --add-data "logo.ico;." --add-data "logo256.png;." --add-data "logo48.png;." --collect-all webview hyperia.py
+pyinstaller --onedir --noconsole --name HYPERIA --icon logo.ico --version-file version.txt --add-data "logo.ico;." --add-data "logo256.png;." --add-data "logo48.png;." --add-data "browser48.png;." --add-data "browser22.png;." --collect-all webview hyperia.py
 ```
 Installer: compile `installer.iss` with Inno Setup 6.
 

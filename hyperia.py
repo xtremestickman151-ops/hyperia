@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 APP = "HYPERIA"
-APP_VERSION = "1.1.5"
+APP_VERSION = "1.1.6"
 COPYRIGHT = "\u00a92026 EX Inc."
 UPDATE_URL = "https://raw.githubusercontent.com/xtremestickman151-ops/hyperia/main/latest.json"
 NOWIN = 0x08000000
@@ -436,7 +436,10 @@ class Store(Win):
         apps = [(n, g, c) for n, g, c in NATIVE_APPS if n != "HYPERIA Store"] + [(n, g, c) for n, g, c, _ in WEB_APPS]
         for i, (n, g, col) in enumerate(apps):
             f = tk.Frame(grid, bg=CARD, cursor="hand2"); f.grid(row=i // 4, column=i % 4, padx=5, pady=5, sticky="we")
-            tk.Label(f, text=g, bg=col, fg="white", font=(FONT, 11, "bold"), width=3).pack(side="left", padx=6, pady=6)
+            if n in shell.app_img:
+                tk.Label(f, image=shell.app_img[n][1], bg=CARD, width=34).pack(side="left", padx=6, pady=6)
+            else:
+                tk.Label(f, text=g, bg=col, fg="white", font=(FONT, 11, "bold"), width=3).pack(side="left", padx=6, pady=6)
             tk.Label(f, text=n, bg=CARD, fg=TXT, font=(FONT, 9), width=13, anchor="w").pack(side="left")
             for w in (f,) + tuple(f.winfo_children()):
                 w.bind("<Button-1>", lambda e, n=n: shell.launch(n))
@@ -454,6 +457,11 @@ class Shell(tk.Tk):
             self.logo_big = self.logo_big.subsample(2, 2); self.logo_small = tk.PhotoImage(file=res_path("logo48.png")).subsample(2, 2)
         except Exception:
             self.logo_big = self.logo_small = None
+        self.app_img = {}
+        try:
+            self.app_img["Browser"] = (tk.PhotoImage(file=res_path("browser48.png")), tk.PhotoImage(file=res_path("browser22.png")))
+        except Exception:
+            pass
         try: self.state("zoomed")
         except Exception: pass
         self.wins = []; self.full = False; self.wall = ("#000000", "#0f1a08"); self.start_open = False
@@ -478,7 +486,7 @@ class Shell(tk.Tk):
         self.bind("<Super_L>", lambda e: self.toggle_start())
         self.startmenu = None; self.tick()
         if os.environ.get("HYPERIA_DEMO"):  # used only for screenshots
-            self.after(1200, self.open_start)
+            self.after(1200, lambda: (self.open_start(), self.launch("HYPERIA Store")))
 
     # ---------- desktop ----------
     def set_wall(self, a, z):
@@ -504,8 +512,11 @@ class Shell(tk.Tk):
             x = 20 + (i // per_col) * 92; y = 16 + (i % per_col) * 92
             if x > w / 2 - 200 and x < w / 2 + 200: x += 0  # keep simple
             tag = "ic%d" % i
-            rrect(d, x + 14, y, x + 62, y + 48, 12, fill=col, outline="", tags=("icon", tag))
-            d.create_text(x + 38, y + 24, text=g, fill="white", font=(FONT, 15, "bold"), tags=("icon", tag))
+            if n in self.app_img:
+                d.create_image(x + 38, y + 24, image=self.app_img[n][0], tags=("icon", tag))
+            else:
+                rrect(d, x + 14, y, x + 62, y + 48, 12, fill=col, outline="", tags=("icon", tag))
+                d.create_text(x + 38, y + 24, text=g, fill="white", font=(FONT, 15, "bold"), tags=("icon", tag))
             d.create_text(x + 38, y + 62, text=n, fill=TXT, font=(FONT, 9), width=86, tags=("icon", tag))
             d.tag_bind(tag, "<Double-Button-1>", lambda e, n=n: self.launch(n))
             d.tag_bind(tag, "<Enter>", lambda e: d.configure(cursor="hand2")); d.tag_bind(tag, "<Leave>", lambda e: d.configure(cursor=""))
@@ -541,7 +552,10 @@ class Shell(tk.Tk):
             shown = [a for a in allapps if f in a[0].lower()]
             for i, (n, g, col) in enumerate(shown):
                 r = tk.Frame(lst, bg=CARD, cursor="hand2"); r.grid(row=i // 2, column=i % 2, sticky="we", padx=3, pady=2)
-                tk.Label(r, text=g, bg=col, fg="white", font=(FONT, 10, "bold"), width=3).pack(side="left", padx=4, pady=3)
+                if n in self.app_img:
+                    tk.Label(r, image=self.app_img[n][1], bg=CARD, width=30).pack(side="left", padx=4, pady=3)
+                else:
+                    tk.Label(r, text=g, bg=col, fg="white", font=(FONT, 10, "bold"), width=3).pack(side="left", padx=4, pady=3)
                 tk.Label(r, text=n, bg=CARD, fg=TXT, font=(FONT, 10), anchor="w", width=16).pack(side="left")
                 for w in (r,) + tuple(r.winfo_children()):
                     w.bind("<Button-1>", lambda e, n=n: (self.close_start(), self.launch(n)))
