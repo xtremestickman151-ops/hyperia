@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import messagebox, filedialog
 
 APP = "HYPERIA"
-APP_VERSION = "1.1.18"
+APP_VERSION = "1.1.19"
 COPYRIGHT = "\u00a92026 EX Inc."
 UPDATE_URL = "https://raw.githubusercontent.com/xtremestickman151-ops/hyperia/main/latest.json"
 NOWIN = 0x08000000
@@ -108,7 +108,66 @@ def web_main(url, title):
     try:
         if not webview2_installed(): raise RuntimeError("WebView2 missing")
         import webview
-        webview.create_window("HYPERIA · " + title, url, width=1200, height=800)
+        win_holder = {"w": None}
+
+        class Api(object):
+            def exit_to_hyperia(self):
+                """Close this web window and try to return focus to HYPERIA."""
+                try:
+                    if os.name == "nt":
+                        import ctypes
+                        user32 = ctypes.windll.user32
+                        hwnd = user32.FindWindowW(None, APP)
+                        if hwnd:
+                            user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+                            user32.SetForegroundWindow(hwnd)
+                except Exception:
+                    pass
+                w = win_holder.get("w")
+                if w is not None:
+                    try:
+                        w.destroy()
+                    except Exception:
+                        pass
+
+        def inject(_window=None):
+            w = win_holder.get("w")
+            if w is None:
+                return
+            js = (
+                "(function(){"
+                "try{"
+                "var id='hyperia-exit-btn';"
+                "var old=document.getElementById(id); if(old) old.remove();"
+                "var b=document.createElement('button');"
+                "b.id=id; b.type='button'; b.textContent='Exit to HYPERIA';"
+                "b.setAttribute('aria-label','Exit to HYPERIA');"
+                "b.style.cssText=["
+                "'position:fixed','top:10px','right:10px','z-index:2147483647',"
+                "'padding:8px 14px','border-radius:16px','border:1px solid #3a3a3d',"
+                "'background:#1c1c1e','color:#afd067','font:bold 12px Segoe UI,sans-serif',"
+                "'cursor:pointer','box-shadow:0 4px 16px rgba(0,0,0,.45)'"
+                "].join(';');"
+                "b.onmouseenter=function(){b.style.background='#2a2a2d';};"
+                "b.onmouseleave=function(){b.style.background='#1c1c1e';};"
+                "b.onclick=function(ev){ev.preventDefault();ev.stopPropagation();"
+                "try{window.pywebview.api.exit_to_hyperia();}catch(e){}"
+                "};"
+                " (document.body||document.documentElement).appendChild(b);"
+                "}catch(e){}"
+                "})();"
+            )
+            try:
+                w.evaluate_js(js)
+            except Exception:
+                pass
+
+        win_holder["w"] = webview.create_window(
+            "HYPERIA · " + title, url, width=1200, height=800, js_api=Api())
+        try:
+            win_holder["w"].events.loaded += inject
+        except Exception:
+            pass
         webview.start(gui="edgechromium")
     except Exception as e:
         r = tk.Tk(); r.withdraw()
