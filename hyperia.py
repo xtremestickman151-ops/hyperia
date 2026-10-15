@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 APP = "HYPERIA"
-APP_VERSION = "1.1.14"
+APP_VERSION = "1.1.15"
 COPYRIGHT = "\u00a92026 EX Inc."
 UPDATE_URL = "https://raw.githubusercontent.com/xtremestickman151-ops/hyperia/main/latest.json"
 NOWIN = 0x08000000
@@ -16,7 +16,7 @@ FONT, MONO = "Segoe UI", "Consolas"
 
 # name, icon glyph, colour, url (None = native app)
 WEB_APPS = [
-    ("EX SAFARIA LITE", "◎", "#4a90d9", "https://duckduckgo.com"),
+    ("EX SAFARIA LITE", "◎", "#4a90d9", "https://www.bing.com"),
     ("YouTube", "▶", "#ff3b30", "https://www.youtube.com"),
     ("Discord", "◉", "#5865f2", "https://discord.com/app"),
     ("Steam", "♨", "#1b2838", "https://store.steampowered.com"),
