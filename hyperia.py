@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 APP = "HYPERIA"
-APP_VERSION = "1.1.9"
+APP_VERSION = "1.1.10"
 COPYRIGHT = "\u00a92026 EX Inc."
 UPDATE_URL = "https://raw.githubusercontent.com/xtremestickman151-ops/hyperia/main/latest.json"
 NOWIN = 0x08000000
@@ -423,9 +423,7 @@ class Settings(Win):
         tk.Label(b, text="Display", bg=PANEL, fg=TXT, font=(FONT, 12, "bold")).pack(anchor="w", padx=16, pady=(18, 4))
         Pill(b, "Toggle fullscreen (F11)", shell.toggle_full, w=200, fill=CARD2, fg=TXT, bg=PANEL).pack(anchor="w", padx=16)
         tk.Label(b, text="Updates", bg=PANEL, fg=TXT, font=(FONT, 12, "bold")).pack(anchor="w", padx=16, pady=(18, 4))
-        urow = tk.Frame(b, bg=PANEL); urow.pack(anchor="w", padx=16)
-        Pill(urow, "Check for updates", shell.check_updates, w=180, bg=PANEL).pack(side="left")
-        Pill(urow, "Full screen", shell.toggle_full, w=120, fill=CARD2, fg=TXT, bg=PANEL).pack(side="left", padx=8)
+        Pill(b, "Check for updates", shell.check_updates, w=180, bg=PANEL).pack(anchor="w", padx=16)
         tk.Label(b, text="HYPERIA %s · %s" % (APP_VERSION, COPYRIGHT), bg=PANEL, fg=MUT, font=(FONT, 9)).pack(anchor="w", padx=16, pady=(18, 0))
 
 
@@ -479,6 +477,9 @@ class Shell(tk.Tk):
         upd = tk.Label(self.task, text=" ⟳ Updates ", bg="#0b0b0c", fg=GREEN, font=(FONT, 9, "bold"), cursor="hand2")
         upd.pack(side="right", padx=4); upd.bind("<Button-1>", lambda e: self.check_updates())
         upd.bind("<Enter>", lambda e: upd.configure(bg=CARD2)); upd.bind("<Leave>", lambda e: upd.configure(bg="#0b0b0c"))
+        fs = tk.Label(self.task, text=" Full screen ", bg="#0b0b0c", fg=TXT, font=(FONT, 9, "bold"), cursor="hand2")
+        fs.pack(side="right", padx=4); fs.bind("<Button-1>", lambda e: self.toggle_full())
+        fs.bind("<Enter>", lambda e: fs.configure(bg=CARD2)); fs.bind("<Leave>", lambda e: fs.configure(bg="#0b0b0c"))
         tk.Label(self.task, text=COPYRIGHT, bg="#0b0b0c", fg=MUT, font=(FONT, 8)).pack(side="right", padx=8)
 
         self.desk.bind("<Configure>", lambda e: self.draw_desk())
