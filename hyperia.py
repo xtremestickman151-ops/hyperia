@@ -3,10 +3,10 @@ Honest note: HYPERIA is an app running on Windows, not an operating system or ke
 ©2026 EX Inc."""
 import json, os, random, re, subprocess, sys, threading, time, urllib.request, webbrowser
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
 
 APP = "HYPERIA"
-APP_VERSION = "1.1.17"
+APP_VERSION = "1.1.18"
 COPYRIGHT = "\u00a92026 EX Inc."
 UPDATE_URL = "https://raw.githubusercontent.com/xtremestickman151-ops/hyperia/main/latest.json"
 NOWIN = 0x08000000
@@ -34,9 +34,9 @@ WEB_APPS = [
     ("Google Earth", "🌍", "#34a853", "https://earth.google.com/web"),
 ]
 NATIVE_APPS = [
-    ("HYPERIA Store", "▦", GREEN), ("Files", "▤", "#e5a524"), ("Terminal", ">_", "#3a3a3d"),
-    ("Settings", "⚙", "#8e8e93"), ("Clock", "◷", "#5ac8fa"), ("Pong", "▮", "#ffffff"),
-    ("Fireout 1997", "🔥", "#ff453a"),
+    ("HYPERIA Store", "▦", GREEN), ("Notebook", "✎", "#c7a26b"), ("Files", "▤", "#e5a524"),
+    ("Terminal", ">_", "#3a3a3d"), ("Settings", "⚙", "#8e8e93"), ("Clock", "◷", "#5ac8fa"),
+    ("Pong", "▮", "#ffffff"), ("Fireout 1997", "🔥", "#ff453a"),
 ]
 
 
@@ -218,6 +218,69 @@ class Win(tk.Frame):
 
     def on_close(self):
         pass
+
+
+class Notebook(Win):
+    """Simple notepad for text notes."""
+    def __init__(self, shell):
+        super().__init__(shell, "Notebook", 640, 460, maximizable=True)
+        self.path = None
+        self.notes_dir = os.path.join(os.path.expanduser("~"), "Documents", "HYPERIA Notes")
+        try:
+            os.makedirs(self.notes_dir, exist_ok=True)
+        except Exception:
+            self.notes_dir = os.path.expanduser("~")
+        top = tk.Frame(self.body, bg=PANEL); top.pack(fill="x", padx=8, pady=8)
+        for label, cmd in (("New", self.new_note), ("Open", self.open_note), ("Save", self.save_note), ("Save As", self.save_as)):
+            Pill(top, label, cmd, w=88, h=28, fill=CARD2, fg=TXT, bg=PANEL).pack(side="left", padx=3)
+        self.status = tk.Label(self.body, text="Untitled", bg=PANEL, fg=MUT, font=(FONT, 9), anchor="w")
+        self.status.pack(fill="x", padx=12)
+        self.text = tk.Text(self.body, bg="#0a0a0a", fg=TXT, insertbackground=TXT, font=(FONT, 11),
+                            relief="flat", highlightthickness=0, undo=True, wrap="word", padx=10, pady=8)
+        self.text.pack(fill="both", expand=True, padx=8, pady=(4, 8))
+        self.text.focus_set()
+
+    def _set_status(self, dirty=False):
+        name = os.path.basename(self.path) if self.path else "Untitled"
+        self.status.configure(text=("%s  •" % name) if dirty else name)
+
+    def new_note(self):
+        if self.text.get("1.0", "end-1c").strip():
+            if not messagebox.askyesno(APP, "Discard current note and start a new one?"):
+                return
+        self.text.delete("1.0", "end"); self.path = None; self._set_status()
+
+    def open_note(self):
+        path = filedialog.askopenfilename(
+            parent=self.shell, title="Open note", initialdir=self.notes_dir,
+            filetypes=[("Text", "*.txt"), ("All files", "*.*")])
+        if not path:
+            return
+        try:
+            with open(path, "r", encoding="utf-8", errors="replace") as f:
+                data = f.read()
+        except Exception as e:
+            messagebox.showwarning(APP, "Could not open note:\n%s" % e); return
+        self.text.delete("1.0", "end"); self.text.insert("1.0", data)
+        self.path = path; self._set_status()
+
+    def save_note(self):
+        if not self.path:
+            return self.save_as()
+        try:
+            with open(self.path, "w", encoding="utf-8") as f:
+                f.write(self.text.get("1.0", "end-1c"))
+        except Exception as e:
+            messagebox.showwarning(APP, "Could not save note:\n%s" % e); return
+        self._set_status()
+
+    def save_as(self):
+        path = filedialog.asksaveasfilename(
+            parent=self.shell, title="Save note", initialdir=self.notes_dir,
+            defaultextension=".txt", filetypes=[("Text", "*.txt"), ("All files", "*.*")])
+        if not path:
+            return
+        self.path = path; self.save_note()
 
 
 class Files(Win):
@@ -633,8 +696,8 @@ class Shell(tk.Tk):
     def launch(self, name):
         for n, g, col, url in WEB_APPS:
             if n == name: return open_web(url, n)
-        cls = {"HYPERIA Store": Store, "Files": Files, "Terminal": Terminal, "Settings": Settings, "Clock": Clock,
-               "Pong": Pong, "Fireout 1997": Fireout}.get(name)
+        cls = {"HYPERIA Store": Store, "Notebook": Notebook, "Files": Files, "Terminal": Terminal,
+               "Settings": Settings, "Clock": Clock, "Pong": Pong, "Fireout 1997": Fireout}.get(name)
         if cls: return cls(self)
 
     def add_win(self, w):
