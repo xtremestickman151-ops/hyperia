@@ -1,7 +1,7 @@
 {
-  "version": "1.1.2",
-  "url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.2/HYPERIA.Setup.1.1.2.exe",
-  "full_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.2/HYPERIA.zip",
-  "installer_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.2/HYPERIA.Setup.1.1.2.exe",
-  "notes": "Web apps open straight away in the HYPERIA web window, with no launcher step. Run the installer over your existing install."
+  "version": "1.1.3",
+  "url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.3/HYPERIA.Setup.1.1.3.exe",
+  "full_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.3/HYPERIA.zip",
+  "installer_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.3/HYPERIA.Setup.1.1.3.exe",
+  "notes": "Check for updates is now in the Start menu and on the taskbar. Run the installer over your existing install."
 }
