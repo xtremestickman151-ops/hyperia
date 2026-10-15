@@ -1,21 +1,44 @@
-"""HYPERIA — branded VirtualBox front-end for Windows. ©2026 EX Inc.
-Honest note: HYPERIA is a launcher/manager for VirtualBox VMs, not a from-scratch OS."""
-import ctypes, json, os, queue, re, shutil, subprocess, sys, threading, time, urllib.request, webbrowser
+"""HYPERIA - a creative desktop shell for Windows by EX Inc.
+Honest note: HYPERIA is an app running on Windows, not an operating system or kernel.
+©2026 EX Inc."""
+import json, os, random, re, subprocess, sys, threading, time, urllib.request, webbrowser
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import messagebox
 
 APP = "HYPERIA"
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.1.0"
 COPYRIGHT = "\u00a92026 EX Inc."
 UPDATE_URL = "https://raw.githubusercontent.com/xtremestickman151-ops/hyperia/main/latest.json"
-VM_NAME = "HYPERIA"
-VBOX_DOWNLOAD = "https://www.virtualbox.org/wiki/Downloads"
-LUBUNTU_DOWNLOAD = "https://lubuntu.me/downloads/"
 NOWIN = 0x08000000
-BG, SIDE, CARD, CARD2, BORDER = "#000000", "#0a0a0a", "#1c1c1e", "#2a2a2d", "#3a3a3d"
-TXT, MUT, GREEN, GREY = "#f2f2f4", "#9a9aa0", "#afd067", "#3a3a3d"
-FONT = "Segoe UI"
-_MUTEX = None
+BG, PANEL, CARD, CARD2, BORDER = "#000000", "#0d0d0f", "#1c1c1e", "#2a2a2d", "#3a3a3d"
+TXT, MUT, GREEN, GREEN2 = "#f2f2f4", "#9a9aa0", "#afd067", "#7fa83a"
+FONT, MONO = "Segoe UI", "Consolas"
+
+# name, icon glyph, colour, url (None = native app)
+WEB_APPS = [
+    ("Browser", "◎", "#4a90d9", "https://duckduckgo.com"),
+    ("YouTube", "▶", "#ff3b30", "https://www.youtube.com"),
+    ("Discord", "◉", "#5865f2", "https://discord.com/app"),
+    ("Steam", "♨", "#1b2838", "https://store.steampowered.com"),
+    ("itch.io", "◆", "#fa5c5c", "https://itch.io"),
+    ("Speed Test", "⚡", "#e5a524", "https://fast.com"),
+    ("Reddit", "●", "#ff4500", "https://www.reddit.com"),
+    ("Wikipedia", "W", "#888888", "https://www.wikipedia.org"),
+    ("Twitch", "▣", "#9146ff", "https://www.twitch.tv"),
+    ("Weather", "☁", "#3fa9f5", "https://www.bbc.co.uk/weather"),
+    ("Sport", "⚽", "#ffd60a", "https://www.bbc.co.uk/sport"),
+    ("Amazon", "a", "#ff9900", "https://www.amazon.co.uk"),
+    ("Temu", "T", "#fb7701", "https://www.temu.com"),
+    ("Xbox", "X", "#107c10", "https://www.xbox.com"),
+    ("Cloud Gaming", "☁", "#107c10", "https://www.xbox.com/play"),
+    ("Google Earth", "🌍", "#34a853", "https://earth.google.com/web"),
+    ("Community", "☺", "#afd067", "https://github.com/xtremestickman151-ops/hyperia/discussions"),
+]
+NATIVE_APPS = [
+    ("HYPERIA Store", "▦", GREEN), ("Files", "▤", "#e5a524"), ("Terminal", ">_", "#3a3a3d"),
+    ("Settings", "⚙", "#8e8e93"), ("Clock", "◷", "#5ac8fa"), ("Pong", "▮", "#ffffff"),
+    ("Fireout 1997", "🔥", "#ff453a"), ("About", "ⓘ", GREEN),
+]
 
 
 def res_path(name):
@@ -23,42 +46,11 @@ def res_path(name):
     return os.path.join(base, name)
 
 
-def is_admin():
-    try: return bool(ctypes.windll.shell32.IsUserAnAdmin())
-    except Exception: return False
-
-
-def single_instance():
-    global _MUTEX
-    if os.name != "nt": return True
-    try:
-        k = ctypes.windll.kernel32
-        _MUTEX = k.CreateMutexW(None, False, "Local\\HYPERIA_SingleInstance")
-        if k.GetLastError() != 183: return True
-        u = ctypes.windll.user32
-        for _ in range(10):
-            found = []
-            def cb(h, l):
-                buf = ctypes.create_unicode_buffer(256)
-                u.GetWindowTextW(h, buf, 256)
-                if buf.value.startswith(APP) and u.IsWindowVisible(h): found.append(h)
-                return True
-            u.EnumWindows(ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)(cb), 0)
-            if found:
-                u.ShowWindow(found[0], 9); u.SetForegroundWindow(found[0]); return False
-            time.sleep(0.3)
-        return True
-    except Exception:
-        return True
-
-
 def vtuple(v):
     return tuple(int(x) for x in re.findall(r"\d+", str(v))[:4]) or (0,)
 
 
 def check_update():
-    if not UPDATE_URL.strip():
-        return "unconfigured", "Update server not configured yet."
     try:
         req = urllib.request.Request(UPDATE_URL, headers={"User-Agent": APP + "/" + APP_VERSION})
         with urllib.request.urlopen(req, timeout=8) as r:
@@ -67,59 +59,31 @@ def check_update():
     except Exception as e:
         return "error", "Could not check for updates (%s)." % (getattr(e, "reason", None) or e)
     if vtuple(ver) > vtuple(APP_VERSION):
-        return "newer", {"version": ver, "url": str(m.get("url", "")), "notes": str(m.get("notes", "")),
-                         "full_url": str(m.get("full_url", "")), "installer_url": str(m.get("installer_url", ""))}
+        return "newer", {"version": ver, "notes": str(m.get("notes", "")),
+                         "link": str(m.get("installer_url") or m.get("url", ""))}
     return "latest", "You have the latest version (%s)." % APP_VERSION
 
 
-def run(cmd, timeout=120):
+def open_web(url, title):
+    """Open URL in its own HYPERIA web window (pywebview / Edge WebView2); fall back to default browser."""
     try:
-        si = None; flags = 0
-        if os.name == "nt":
-            si = subprocess.STARTUPINFO(); si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            flags = NOWIN
-        p = subprocess.run(cmd, capture_output=True, timeout=timeout, startupinfo=si, creationflags=flags)
-        out = (p.stdout or b"") + (p.stderr or b"")
-        return p.returncode, out.decode("utf-8", "replace")
-    except FileNotFoundError:
-        return -1, "not found"
-    except Exception as e:
-        return -1, str(e)
+        if getattr(sys, "frozen", False):
+            cmd = [sys.executable, "--web", url, title]
+        else:
+            cmd = [sys.executable, os.path.abspath(__file__), "--web", url, title]
+        subprocess.Popen(cmd, creationflags=NOWIN if os.name == "nt" else 0)
+        return True
+    except Exception:
+        webbrowser.open(url); return False
 
 
-def find_vboxmanage():
-    candidates = []
-    which = shutil.which("VBoxManage") or shutil.which("VBoxManage.exe")
-    if which: candidates.append(which)
-    for base in (
-        os.environ.get("VBOX_MSI_INSTALL_PATH", ""),
-        os.environ.get("VBOX_INSTALL_PATH", ""),
-        r"C:\Program Files\Oracle\VirtualBox",
-        r"C:\Program Files (x86)\Oracle\VirtualBox",
-        os.path.expandvars(r"%ProgramFiles%\Oracle\VirtualBox"),
-        os.path.expandvars(r"%ProgramFiles(x86)%\Oracle\VirtualBox"),
-    ):
-        if not base: continue
-        p = os.path.join(base, "VBoxManage.exe")
-        if os.path.isfile(p): candidates.append(p)
-    for p in candidates:
-        rc, out = run([p, "--version"], 15)
-        if rc == 0 and out.strip():
-            return p, out.strip().splitlines()[0]
-    return None, None
-
-
-def vbox(vb, *args, timeout=180):
-    return run([vb, *args], timeout)
-
-
-def parse_vminfo(text):
-    d = {}
-    for line in text.splitlines():
-        if "=" in line:
-            k, _, v = line.partition("=")
-            d[k.strip()] = v.strip().strip('"')
-    return d
+def web_main(url, title):
+    try:
+        import webview
+        webview.create_window("HYPERIA · " + title, url, width=1200, height=800)
+        webview.start()
+    except Exception:
+        webbrowser.open(url)
 
 
 def rrect(c, x1, y1, x2, y2, r, **kw):
@@ -127,310 +91,515 @@ def rrect(c, x1, y1, x2, y2, r, **kw):
     return c.create_polygon(pts, smooth=True, **kw)
 
 
-class Card(tk.Canvas):
-    def __init__(self, master, title="", height=None, **kw):
-        super().__init__(master, bg=BG, highlightthickness=0, height=height or 100, **kw)
-        self.title = title
-        self.body = tk.Frame(self, bg=CARD)
-        self.win = self.create_window(18, 44 if title else 16, window=self.body, anchor="nw")
-        self.bind("<Configure>", self._draw)
-
-    def _draw(self, e=None):
-        self.delete("bg"); w, h = self.winfo_width(), self.winfo_height()
-        rrect(self, 2, 2, w-2, h-2, 18, fill=CARD, outline=BORDER, width=1, tags="bg")
-        if self.title:
-            self.create_text(18, 22, text=self.title, anchor="w", fill=MUT, font=(FONT, 10, "bold"), tags="bg")
-        self.tag_lower("bg"); self.itemconfigure(self.win, width=max(10, w-36))
-
-
-class PillButton(tk.Canvas):
-    def __init__(self, master, text, cmd, w=180, h=36, fill=GREEN, fg="#0a1200", bg=CARD):
+class Pill(tk.Canvas):
+    def __init__(self, master, text, cmd, w=140, h=32, fill=GREEN, fg="#0a1200", bg=CARD):
         super().__init__(master, width=w, height=h, bg=bg, highlightthickness=0, cursor="hand2")
-        self.cmd, self.fill, self.text, self.fg = cmd, fill, text, fg
-        self.bind("<Button-1>", lambda e: cmd()); self.bind("<Enter>", lambda e: self.draw(True)); self.bind("<Leave>", lambda e: self.draw())
+        self.t, self.f, self.fg = text, fill, fg
+        self.bind("<Button-1>", lambda e: cmd()); self.bind("<Enter>", lambda e: self.draw(1)); self.bind("<Leave>", lambda e: self.draw())
         self.draw()
 
-    def draw(self, hover=False):
+    def draw(self, hover=0):
         self.delete("all"); w, h = int(self["width"]), int(self["height"])
-        f = self.fill if not hover else ("#c5e080" if self.fill == GREEN else "#3a3a3d")
-        rrect(self, 1, 1, w-1, h-1, h//2, fill=f, outline=BORDER)
-        self.create_text(w//2, h//2, text=self.text, fill=self.fg, font=(FONT, 10, "bold"))
+        rrect(self, 1, 1, w-1, h-1, h//2, fill=("#c5e080" if hover and self.f == GREEN else "#3a3a3d" if hover else self.f), outline=BORDER)
+        self.create_text(w//2, h//2, text=self.t, fill=self.fg, font=(FONT, 10, "bold"))
 
 
-class NoticeBox(tk.Canvas):
-    def __init__(self, master, text, bg, w=160, h=28, size=8):
-        super().__init__(master, width=w, height=h, bg=bg, highlightthickness=0)
-        rrect(self, 1, 1, w-1, h-1, 9, fill="#1c1c1e", outline="#3a3a3d", width=1)
-        self.create_text(w//2, h//2, text=text, fill="#c7c7cc", font=(FONT, size))
+class Win(tk.Frame):
+    """A window living inside the HYPERIA desktop."""
+    def __init__(self, shell, title, w=640, h=440):
+        super().__init__(shell.desk, bg=BORDER, bd=0)
+        self.shell, self.title = shell, title
+        bar = tk.Frame(self, bg=CARD2, height=32); bar.pack(fill="x", padx=1, pady=(1, 0))
+        tk.Label(bar, text="  " + title, bg=CARD2, fg=TXT, font=(FONT, 10, "bold")).pack(side="left")
+        x = tk.Label(bar, text="  ✕  ", bg=CARD2, fg=TXT, font=(FONT, 10), cursor="hand2"); x.pack(side="right")
+        x.bind("<Button-1>", lambda e: self.close())
+        x.bind("<Enter>", lambda e: x.configure(bg="#c42b1c")); x.bind("<Leave>", lambda e: x.configure(bg=CARD2))
+        m = tk.Label(bar, text="  —  ", bg=CARD2, fg=TXT, font=(FONT, 10), cursor="hand2"); m.pack(side="right")
+        m.bind("<Button-1>", lambda e: self.minimize())
+        self.body = tk.Frame(self, bg=PANEL); self.body.pack(fill="both", expand=True, padx=1, pady=(0, 1))
+        for wdg in (bar,) + tuple(bar.winfo_children()[:1]):
+            wdg.bind("<ButtonPress-1>", self._press); wdg.bind("<B1-Motion>", self._drag)
+        self.bind("<Button-1>", lambda e: self.lift_())
+        n = len(shell.wins)
+        self.place(x=120 + 30 * (n % 8), y=60 + 26 * (n % 8), width=w, height=h)
+        shell.add_win(self)
+
+    def _press(self, e):
+        self.lift_(); self._dx, self._dy = e.x_root - self.winfo_x(), e.y_root - self.winfo_y()
+
+    def _drag(self, e):
+        self.place(x=e.x_root - self._dx, y=max(0, e.y_root - self._dy))
+
+    def lift_(self):
+        self.lift(); self.shell.focus_win(self)
+
+    def minimize(self):
+        self.place_forget(); self.hidden = True; self.shell.refresh_task()
+
+    def restore(self):
+        if getattr(self, "hidden", False):
+            self.place(x=140, y=80, width=self.winfo_reqwidth() or 640, height=self.winfo_reqheight() or 440)
+            self.hidden = False
+        self.lift_()
+
+    def close(self):
+        self.on_close(); self.shell.remove_win(self); self.destroy()
+
+    def on_close(self):
+        pass
 
 
-class App(tk.Tk):
+class WebHost(Win):
+    def __init__(self, shell, name, glyph, color, url):
+        super().__init__(shell, name, 520, 300)
+        b = self.body
+        c = tk.Canvas(b, width=80, height=80, bg=PANEL, highlightthickness=0); c.pack(pady=(24, 8))
+        rrect(c, 4, 4, 76, 76, 18, fill=color, outline="")
+        c.create_text(40, 40, text=glyph, fill="white", font=(FONT, 26, "bold"))
+        tk.Label(b, text=name, bg=PANEL, fg=TXT, font=(FONT, 15, "bold")).pack()
+        tk.Label(b, text=url, bg=PANEL, fg=MUT, font=(FONT, 9)).pack(pady=(2, 12))
+        row = tk.Frame(b, bg=PANEL); row.pack()
+        Pill(row, "Open in HYPERIA", lambda: (open_web(url, name), self.close()), w=160, bg=PANEL).pack(side="left", padx=6)
+        Pill(row, "Default browser", lambda: webbrowser.open(url), w=150, fill=CARD2, fg=TXT, bg=PANEL).pack(side="left", padx=6)
+        tk.Label(b, text="Web apps open in a HYPERIA web window (Microsoft Edge WebView2).",
+                 bg=PANEL, fg=MUT, font=(FONT, 8)).pack(pady=(12, 0))
+
+
+class Files(Win):
+    def __init__(self, shell):
+        super().__init__(shell, "Files", 680, 460)
+        self.cwd = os.path.expanduser("~")
+        top = tk.Frame(self.body, bg=PANEL); top.pack(fill="x", padx=8, pady=8)
+        for label, path in (("Home", "~"), ("Desktop", "~/Desktop"), ("Documents", "~/Documents"), ("Downloads", "~/Downloads")):
+            Pill(top, label, lambda p=path: self.go(os.path.expanduser(p)), w=100, h=28, fill=CARD2, fg=TXT, bg=PANEL).pack(side="left", padx=3)
+        Pill(top, "↑ Up", lambda: self.go(os.path.dirname(self.cwd)), w=70, h=28, fill=CARD2, fg=TXT, bg=PANEL).pack(side="left", padx=3)
+        self.path = tk.Label(self.body, bg=PANEL, fg=GREEN, font=(MONO, 9), anchor="w"); self.path.pack(fill="x", padx=10)
+        self.lb = tk.Listbox(self.body, bg="#0a0a0a", fg=TXT, font=(FONT, 10), selectbackground=CARD2,
+                             relief="flat", highlightthickness=0, activestyle="none")
+        self.lb.pack(fill="both", expand=True, padx=8, pady=8)
+        self.lb.bind("<Double-Button-1>", self.open_sel); self.lb.bind("<Return>", self.open_sel)
+        self.go(self.cwd)
+
+    def go(self, p):
+        try:
+            items = sorted(os.listdir(p), key=lambda n: (not os.path.isdir(os.path.join(p, n)), n.lower()))
+        except Exception as e:
+            messagebox.showwarning(APP, "Cannot open folder:\n%s" % e); return
+        self.cwd = p; self.path.configure(text=p); self.lb.delete(0, "end")
+        for n in items:
+            if n.startswith("."): continue
+            self.lb.insert("end", ("📁  " if os.path.isdir(os.path.join(p, n)) else "📄  ") + n)
+
+    def open_sel(self, e=None):
+        s = self.lb.curselection()
+        if not s: return
+        name = self.lb.get(s[0])[3:]
+        full = os.path.join(self.cwd, name)
+        if os.path.isdir(full): self.go(full)
+        else:
+            try: os.startfile(full)
+            except Exception as ex: messagebox.showwarning(APP, str(ex))
+
+
+class Terminal(Win):
+    def __init__(self, shell):
+        super().__init__(shell, "Terminal", 720, 440)
+        self.cwd = os.path.expanduser("~")
+        self.out = tk.Text(self.body, bg="#050505", fg="#d8f0b0", font=(MONO, 10), relief="flat",
+                           highlightthickness=0, state="disabled", padx=8, pady=6)
+        self.out.pack(fill="both", expand=True)
+        row = tk.Frame(self.body, bg=CARD); row.pack(fill="x")
+        tk.Label(row, text="PS>", bg=CARD, fg=GREEN, font=(MONO, 10, "bold")).pack(side="left", padx=6)
+        self.inp = tk.Entry(row, bg=CARD, fg=TXT, insertbackground=TXT, relief="flat", font=(MONO, 10))
+        self.inp.pack(side="left", fill="x", expand=True, ipady=5)
+        self.inp.bind("<Return>", self.run)
+        self.write("HYPERIA Terminal (PowerShell, one command at a time; cd is remembered)\n" + self.cwd + "\n")
+        self.inp.focus_set()
+
+    def write(self, t):
+        self.out.configure(state="normal"); self.out.insert("end", t); self.out.see("end"); self.out.configure(state="disabled")
+
+    def run(self, e=None):
+        cmd = self.inp.get().strip(); self.inp.delete(0, "end")
+        if not cmd: return
+        self.write("PS %s> %s\n" % (self.cwd, cmd))
+        m = re.match(r"^(cd|Set-Location|sl)\s*(.*)$", cmd, re.I)
+        if m:
+            target = m.group(2).strip().strip('"') or os.path.expanduser("~")
+            new = os.path.normpath(os.path.join(self.cwd, os.path.expanduser(target)))
+            if os.path.isdir(new): self.cwd = new; self.write(new + "\n")
+            else: self.write("Path not found: %s\n" % target)
+            return
+        if cmd.lower() in ("cls", "clear"):
+            self.out.configure(state="normal"); self.out.delete("1.0", "end"); self.out.configure(state="disabled"); return
+        def job():
+            try:
+                si = None
+                if os.name == "nt":
+                    si = subprocess.STARTUPINFO(); si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                p = subprocess.run(["powershell", "-NoLogo", "-NoProfile", "-Command", cmd], cwd=self.cwd,
+                                   capture_output=True, timeout=120, startupinfo=si,
+                                   creationflags=NOWIN if os.name == "nt" else 0)
+                out = (p.stdout + p.stderr).decode("utf-8", "replace")
+            except Exception as ex:
+                out = "Error: %s\n" % ex
+            self.after(0, lambda: self.write(out if out.endswith("\n") or not out else out + "\n"))
+        threading.Thread(target=job, daemon=True).start()
+
+
+class Clock(Win):
+    def __init__(self, shell):
+        super().__init__(shell, "Clock", 380, 260)
+        self.t = tk.Label(self.body, bg=PANEL, fg=TXT, font=(FONT, 40, "bold")); self.t.pack(pady=(30, 0))
+        self.d = tk.Label(self.body, bg=PANEL, fg=GREEN, font=(FONT, 12)); self.d.pack()
+        Pill(self.body, "Weather forecast", lambda: open_web("https://www.bbc.co.uk/weather", "Weather"), w=170, bg=PANEL).pack(pady=18)
+        self.tick()
+
+    def tick(self):
+        if not self.winfo_exists(): return
+        self.t.configure(text=time.strftime("%H:%M:%S")); self.d.configure(text=time.strftime("%A %d %B %Y"))
+        self.after(500, self.tick)
+
+
+class Pong(Win):
+    W, H = 560, 340
+
+    def __init__(self, shell):
+        super().__init__(shell, "Pong", self.W + 2, self.H + 64)
+        self.c = tk.Canvas(self.body, width=self.W, height=self.H, bg="#000", highlightthickness=0); self.c.pack()
+        tk.Label(self.body, text="W / S or ↑ / ↓ to move · first to 7", bg=PANEL, fg=MUT, font=(FONT, 9)).pack()
+        self.keys = set(); self.score = [0, 0]; self.reset(); self.running = True
+        self.c.bind("<KeyPress>", lambda e: self.keys.add(e.keysym.lower()))
+        self.c.bind("<KeyRelease>", lambda e: self.keys.discard(e.keysym.lower()))
+        self.c.bind("<Button-1>", lambda e: self.c.focus_set()); self.c.focus_set()
+        self.p1 = self.p2 = self.H / 2; self.loop()
+
+    def reset(self, d=1):
+        self.bx, self.by = self.W / 2, self.H / 2
+        self.vx, self.vy = 5 * d, random.choice([-3, -2, 2, 3])
+
+    def loop(self):
+        if not self.running or not self.winfo_exists(): return
+        if {"w", "up"} & self.keys: self.p1 -= 7
+        if {"s", "down"} & self.keys: self.p1 += 7
+        self.p2 += max(-5, min(5, self.by - self.p2))
+        self.p1 = max(35, min(self.H - 35, self.p1)); self.p2 = max(35, min(self.H - 35, self.p2))
+        self.bx += self.vx; self.by += self.vy
+        if self.by < 6 or self.by > self.H - 6: self.vy = -self.vy
+        if self.bx < 24 and abs(self.by - self.p1) < 38: self.vx = abs(self.vx) * 1.05; self.vy += (self.by - self.p1) / 10
+        if self.bx > self.W - 24 and abs(self.by - self.p2) < 38: self.vx = -abs(self.vx) * 1.05
+        if self.bx < 0: self.score[1] += 1; self.reset(1)
+        if self.bx > self.W: self.score[0] += 1; self.reset(-1)
+        c = self.c; c.delete("all")
+        for y in range(0, self.H, 20): c.create_rectangle(self.W/2 - 1, y, self.W/2 + 1, y + 10, fill="#444", outline="")
+        c.create_rectangle(10, self.p1 - 32, 18, self.p1 + 32, fill=GREEN, outline="")
+        c.create_rectangle(self.W - 18, self.p2 - 32, self.W - 10, self.p2 + 32, fill="#fff", outline="")
+        c.create_rectangle(self.bx - 6, self.by - 6, self.bx + 6, self.by + 6, fill="#fff", outline="")
+        c.create_text(self.W/2 - 40, 30, text=str(self.score[0]), fill=GREEN, font=(MONO, 24, "bold"))
+        c.create_text(self.W/2 + 40, 30, text=str(self.score[1]), fill="#fff", font=(MONO, 24, "bold"))
+        if max(self.score) >= 7:
+            c.create_text(self.W/2, self.H/2, text="YOU WIN!" if self.score[0] >= 7 else "CPU WINS", fill=TXT, font=(MONO, 26, "bold"))
+            c.create_text(self.W/2, self.H/2 + 34, text="click to play again", fill=MUT, font=(MONO, 11))
+            self.c.bind("<Button-1>", lambda e: (setattr(self, "score", [0, 0]), self.c.focus_set(), self.loop()))
+            return
+        self.after(16, self.loop)
+
+    def on_close(self):
+        self.running = False
+
+
+class Fireout(Win):
+    """Fireout 1997 - an original retro top-down racer."""
+    W, H = 420, 520
+    LANES = 4
+
+    def __init__(self, shell):
+        super().__init__(shell, "Fireout 1997", self.W + 2, self.H + 60)
+        self.c = tk.Canvas(self.body, width=self.W, height=self.H, bg="#1a1a1a", highlightthickness=0); self.c.pack()
+        tk.Label(self.body, text="← / → or A / D to steer · ↑ boost · Space to restart", bg=PANEL, fg=MUT, font=(FONT, 9)).pack()
+        self.keys = set(); self.running = True
+        self.c.bind("<KeyPress>", self.kd); self.c.bind("<KeyRelease>", lambda e: self.keys.discard(e.keysym.lower()))
+        self.c.bind("<Button-1>", lambda e: self.c.focus_set()); self.c.focus_set()
+        self.hi = 0; self.new_game(); self.loop()
+
+    def kd(self, e):
+        k = e.keysym.lower(); self.keys.add(k)
+        if k == "space" and self.dead: self.new_game()
+        if k in ("left", "a") and not self.dead: self.lane = max(0, self.lane - 1)
+        if k in ("right", "d") and not self.dead: self.lane = min(self.LANES - 1, self.lane + 1)
+
+    def lane_x(self, i):
+        road = self.W - 80; return 40 + road / self.LANES * (i + 0.5)
+
+    def new_game(self):
+        self.lane = 1; self.px = self.lane_x(1); self.cars = []; self.speed = 6.0; self.dist = 0
+        self.stripe = 0; self.dead = False; self.boom = 0; self.spawn = 0
+
+    def car(self, x, y, body, roof):
+        c = self.c
+        c.create_rectangle(x-16, y-28, x+16, y+28, fill=body, outline="#000", width=2)
+        c.create_rectangle(x-12, y-14, x+12, y+8, fill=roof, outline="")
+        c.create_rectangle(x-20, y-22, x-16, y-10, fill="#000", outline=""); c.create_rectangle(x+16, y-22, x+20, y-10, fill="#000", outline="")
+        c.create_rectangle(x-20, y+10, x-16, y+22, fill="#000", outline=""); c.create_rectangle(x+16, y+10, x+20, y+22, fill="#000", outline="")
+
+    def loop(self):
+        if not self.running or not self.winfo_exists(): return
+        c = self.c; c.delete("all")
+        boost = 1.6 if ({"up", "w"} & self.keys) and not self.dead else 1.0
+        sp = 0 if self.dead else self.speed * boost
+        self.stripe = (self.stripe + sp) % 40
+        # scenery
+        c.create_rectangle(0, 0, 40, self.H, fill="#2f5d1e", outline=""); c.create_rectangle(self.W-40, 0, self.W, self.H, fill="#2f5d1e", outline="")
+        c.create_rectangle(36, 0, 40, self.H, fill="#e8e8e8", outline=""); c.create_rectangle(self.W-40, 0, self.W-36, self.H, fill="#e8e8e8", outline="")
+        road = self.W - 80
+        for i in range(1, self.LANES):
+            x = 40 + road / self.LANES * i
+            for y in range(-40, self.H, 40):
+                c.create_rectangle(x-2, y + self.stripe, x+2, y + self.stripe + 20, fill="#d9c84a", outline="")
+        # traffic
+        if not self.dead:
+            self.spawn -= 1
+            if self.spawn <= 0:
+                lane = random.randrange(self.LANES)
+                self.cars.append([lane, -60, random.choice(["#2b6cb0", "#a0aec0", "#d69e2e", "#6b46c1", "#38a169"]), random.uniform(0.3, 0.6)])
+                self.spawn = max(14, int(46 - self.speed * 2.2))
+        for car in self.cars:
+            car[1] += sp * (1 - car[3]) + (0 if self.dead else 1)
+        self.cars = [k for k in self.cars if k[1] < self.H + 60]
+        for lane, y, col, _ in self.cars:
+            self.car(self.lane_x(lane), y, col, "#111")
+        # player
+        tx = self.lane_x(self.lane); self.px += (tx - self.px) * 0.35
+        py = self.H - 80
+        self.car(self.px, py, "#e53e3e", "#2d0000")
+        if not self.dead:
+            for lane, y, _, _ in self.cars:
+                if abs(self.lane_x(lane) - self.px) < 30 and abs(y - py) < 54:
+                    self.dead = True; self.boom = 0; self.hi = max(self.hi, int(self.dist)); break
+            self.dist += sp / 10; self.speed = min(16, 6 + self.dist / 120)
+        if self.dead:
+            self.boom += 1
+            for i in range(14):
+                r = random.randint(6, 26) + self.boom % 8
+                fx, fy = self.px + random.randint(-22, 22), py + random.randint(-30, 20)
+                c.create_oval(fx-r, fy-r, fx+r, fy+r, fill=random.choice(["#ff453a", "#ff9f0a", "#ffd60a"]), outline="")
+            c.create_rectangle(60, self.H/2 - 60, self.W - 60, self.H/2 + 60, fill="#000", outline=GREEN, width=2)
+            c.create_text(self.W/2, self.H/2 - 26, text="WRECKED!", fill="#ff453a", font=(MONO, 24, "bold"))
+            c.create_text(self.W/2, self.H/2 + 8, text="Distance %d m   Best %d m" % (self.dist, self.hi), fill=TXT, font=(MONO, 11))
+            c.create_text(self.W/2, self.H/2 + 34, text="SPACE to race again", fill=MUT, font=(MONO, 10))
+        # HUD
+        c.create_rectangle(0, 0, self.W, 30, fill="#000", outline="")
+        c.create_text(10, 15, anchor="w", text="FIREOUT 1997", fill="#ff9f0a", font=(MONO, 12, "bold"))
+        c.create_text(self.W - 10, 15, anchor="e", text="%04d m  %3d km/h" % (self.dist, sp * 14), fill=GREEN, font=(MONO, 11, "bold"))
+        self.after(16, self.loop)
+
+    def on_close(self):
+        self.running = False
+
+
+class Settings(Win):
+    WALLS = [("Midnight", "#000000", "#0f1a08"), ("Graphite", "#1a1a1d", "#2a2a2d"),
+             ("Forest", "#0b1f0b", "#24401a"), ("Ocean", "#04121f", "#0b3350")]
+
+    def __init__(self, shell):
+        super().__init__(shell, "Settings", 520, 380)
+        b = self.body
+        tk.Label(b, text="Wallpaper", bg=PANEL, fg=TXT, font=(FONT, 12, "bold")).pack(anchor="w", padx=16, pady=(14, 4))
+        row = tk.Frame(b, bg=PANEL); row.pack(anchor="w", padx=16)
+        for name, a, z in self.WALLS:
+            Pill(row, name, lambda a=a, z=z: shell.set_wall(a, z), w=104, h=30, fill=CARD2, fg=TXT, bg=PANEL).pack(side="left", padx=3)
+        tk.Label(b, text="Display", bg=PANEL, fg=TXT, font=(FONT, 12, "bold")).pack(anchor="w", padx=16, pady=(18, 4))
+        Pill(b, "Toggle fullscreen (F11)", shell.toggle_full, w=200, fill=CARD2, fg=TXT, bg=PANEL).pack(anchor="w", padx=16)
+        tk.Label(b, text="Updates", bg=PANEL, fg=TXT, font=(FONT, 12, "bold")).pack(anchor="w", padx=16, pady=(18, 4))
+        Pill(b, "Check for updates", shell.check_updates, w=180, bg=PANEL).pack(anchor="w", padx=16)
+        tk.Label(b, text="HYPERIA %s · %s" % (APP_VERSION, COPYRIGHT), bg=PANEL, fg=MUT, font=(FONT, 9)).pack(anchor="w", padx=16, pady=18)
+
+
+class Store(Win):
+    def __init__(self, shell):
+        super().__init__(shell, "HYPERIA Store", 700, 470)
+        tk.Label(self.body, text="All apps", bg=PANEL, fg=TXT, font=(FONT, 14, "bold")).pack(anchor="w", padx=16, pady=(12, 6))
+        grid = tk.Frame(self.body, bg=PANEL); grid.pack(fill="both", expand=True, padx=12)
+        apps = [(n, g, c) for n, g, c in NATIVE_APPS if n != "HYPERIA Store"] + [(n, g, c) for n, g, c, _ in WEB_APPS]
+        for i, (n, g, col) in enumerate(apps):
+            f = tk.Frame(grid, bg=CARD, cursor="hand2"); f.grid(row=i // 4, column=i % 4, padx=5, pady=5, sticky="we")
+            tk.Label(f, text=g, bg=col, fg="white", font=(FONT, 11, "bold"), width=3).pack(side="left", padx=6, pady=6)
+            tk.Label(f, text=n, bg=CARD, fg=TXT, font=(FONT, 9), width=13, anchor="w").pack(side="left")
+            for w in (f,) + tuple(f.winfo_children()):
+                w.bind("<Button-1>", lambda e, n=n: shell.launch(n))
+        for c in range(4): grid.columnconfigure(c, weight=1)
+
+
+class About(Win):
+    def __init__(self, shell):
+        super().__init__(shell, "About HYPERIA", 520, 360)
+        b = self.body
+        if shell.logo_big: tk.Label(b, image=shell.logo_big, bg=PANEL).pack(pady=(16, 4))
+        tk.Label(b, text="HYPERIA  %s" % APP_VERSION, bg=PANEL, fg=TXT, font=(FONT, 16, "bold")).pack()
+        tk.Label(b, text="HYPERIA is a creative desktop shell that runs as an app on Windows.\n"
+                 "It is not a real operating system or kernel. Web apps open the real sites\n"
+                 "in a HYPERIA web window or your browser; games and tools are built in.",
+                 bg=PANEL, fg=MUT, font=(FONT, 9), justify="center").pack(pady=8)
+        box = tk.Canvas(b, width=170, height=30, bg=PANEL, highlightthickness=0); box.pack(pady=4)
+        rrect(box, 1, 1, 169, 29, 9, fill=CARD, outline=BORDER); box.create_text(85, 15, text=COPYRIGHT, fill="#c7c7cc", font=(FONT, 9))
+        Pill(b, "Check for updates", shell.check_updates, w=180, bg=PANEL).pack(pady=8)
+
+
+class Shell(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title(APP + ("  [Administrator]" if is_admin() else ""))
+        self.title(APP); self.configure(bg=BG); self.geometry("1280x760"); self.minsize(1000, 640)
         try: self.iconbitmap(default=res_path("logo.ico"))
         except Exception: pass
-        try: self._icon = tk.PhotoImage(file=res_path("logo256.png")); self.iconphoto(True, self._icon)
-        except Exception: pass
-        self.geometry("920x640"); self.minsize(780, 560); self.configure(bg=BG)
-        self.q = queue.Queue()
-        self.vb = None; self.vb_ver = None; self.iso_path = tk.StringVar(value="")
-        self.status = {"vbox": "Checking…", "vm": "—", "state": "—", "os": "—", "ram": "—", "iso": "—"}
-
-        side = tk.Frame(self, bg=SIDE, width=200); side.pack(side="left", fill="y"); side.pack_propagate(False)
-        logo = tk.Canvas(side, width=200, height=100, bg=SIDE, highlightthickness=0); logo.pack()
         try:
-            self._logo = tk.PhotoImage(file=res_path("logo48.png"))
-            logo.create_image(36, 50, image=self._logo)
+            self.logo_big = tk.PhotoImage(file=res_path("logo256.png")); self.iconphoto(True, self.logo_big)
+            self.logo_big = self.logo_big.subsample(2, 2); self.logo_small = tk.PhotoImage(file=res_path("logo48.png")).subsample(2, 2)
         except Exception:
-            logo.create_oval(18, 32, 54, 68, fill=GREEN, outline="")
-        logo.create_text(62, 42, text="HYPERIA", anchor="w", fill=TXT, font=(FONT, 14, "bold"))
-        logo.create_text(62, 62, text="VM launcher", anchor="w", fill=GREEN, font=(FONT, 9, "bold"))
+            self.logo_big = self.logo_small = None
+        try: self.state("zoomed")
+        except Exception: pass
+        self.wins = []; self.full = False; self.wall = ("#000000", "#0f1a08"); self.start_open = False
 
-        self.navs = {}; self.pages = {}
-        main = tk.Frame(self, bg=BG); main.pack(side="left", fill="both", expand=True)
-        self.content = tk.Frame(main, bg=BG); self.content.pack(fill="both", expand=True, padx=18, pady=16)
-        for name, icon in (("Home", "⌂"), ("About", "ⓘ")):
-            l = tk.Label(side, text=f"  {icon}   {name}", anchor="w", bg=SIDE, fg=MUT, font=(FONT, 11),
-                         cursor="hand2", padx=14, pady=10)
-            l.pack(fill="x", padx=12, pady=2); l.bind("<Button-1>", lambda e, n=name: self.show(n)); self.navs[name] = l
-            self.pages[name] = tk.Frame(self.content, bg=BG)
-        tk.Frame(side, bg=BORDER, height=1).pack(fill="x", padx=24, pady=8)
-        up = tk.Label(side, text="  ⟳   Check for updates", anchor="w", bg=SIDE, fg=MUT, font=(FONT, 11),
-                      cursor="hand2", padx=14, pady=10)
-        up.pack(fill="x", padx=12, pady=2); up.bind("<Button-1>", lambda e: self.update_click())
-        up.bind("<Enter>", lambda e: up.configure(bg=CARD2, fg=TXT)); up.bind("<Leave>", lambda e: up.configure(bg=SIDE, fg=MUT))
-        NoticeBox(side, COPYRIGHT, SIDE, w=160, h=28).pack(side="bottom", pady=(4, 14))
-        tk.Label(side, text="VirtualBox front-end\n· not a from-scratch OS",
-                 bg=SIDE, fg=MUT, font=(FONT, 8), justify="left").pack(side="bottom", padx=20, pady=(4, 2))
+        self.desk = tk.Canvas(self, bg=BG, highlightthickness=0); self.desk.pack(fill="both", expand=True)
+        self.task = tk.Frame(self, bg="#0b0b0c", height=48, highlightthickness=1, highlightbackground=BORDER)
+        self.task.pack(fill="x", side="bottom"); self.task.pack_propagate(False)
+        self.start_btn = tk.Label(self.task, text="  ◆  HYPERIA  ", bg="#0b0b0c", fg=GREEN, font=(FONT, 11, "bold"), cursor="hand2")
+        if self.logo_small: self.start_btn.configure(image=self.logo_small, compound="left", text="  HYPERIA  ")
+        self.start_btn.pack(side="left", padx=6, fill="y")
+        self.start_btn.bind("<Button-1>", lambda e: self.toggle_start())
+        self.tasks = tk.Frame(self.task, bg="#0b0b0c"); self.tasks.pack(side="left", fill="y", padx=8)
+        self.clock = tk.Label(self.task, bg="#0b0b0c", fg=TXT, font=(FONT, 10)); self.clock.pack(side="right", padx=14)
+        tk.Label(self.task, text=COPYRIGHT, bg="#0b0b0c", fg=MUT, font=(FONT, 8)).pack(side="right", padx=8)
 
-        self.build_home(); self.build_about(); self.show("Home")
-        self.after(200, self.pump); self.after(100, self.refresh); self.after(4000, self.poll)
+        self.desk.bind("<Configure>", lambda e: self.draw_desk())
+        self.desk.bind("<Button-1>", lambda e: self.close_start())
+        self.bind("<F11>", lambda e: self.toggle_full()); self.bind("<Escape>", lambda e: self.close_start())
+        self.bind("<Super_L>", lambda e: self.toggle_start())
+        self.startmenu = None; self.tick()
+        if os.environ.get("HYPERIA_DEMO"):  # used only for screenshots
+            self.after(1200, lambda: (self.launch("Fireout 1997"), self.launch("HYPERIA Store")))
 
-    def show(self, name):
-        for n, p in self.pages.items():
-            p.pack_forget(); self.navs[n].configure(bg=SIDE, fg=MUT)
-        self.pages[name].pack(fill="both", expand=True); self.navs[name].configure(bg=CARD2, fg=TXT)
+    # ---------- desktop ----------
+    def set_wall(self, a, z):
+        self.wall = (a, z); self.draw_desk()
 
-    def build_home(self):
-        p = self.pages["Home"]
-        # Status card
-        c = Card(p, "STATUS", height=200); c.pack(fill="x")
-        self.lbl = {}
-        for key, title in (("vbox", "VirtualBox"), ("vm", "VM"), ("state", "State"), ("ram", "Memory"), ("iso", "Attached ISO")):
-            row = tk.Frame(c.body, bg=CARD); row.pack(fill="x", pady=2)
-            tk.Label(row, text=title, bg=CARD, fg=MUT, font=(FONT, 9), width=14, anchor="w").pack(side="left")
-            v = tk.StringVar(value="—"); self.lbl[key] = v
-            tk.Label(row, textvariable=v, bg=CARD, fg=TXT, font=(FONT, 10, "bold"), anchor="w").pack(side="left", fill="x", expand=True)
+    def draw_desk(self):
+        d = self.desk; d.delete("wall"); d.delete("icon")
+        w, h = max(d.winfo_width(), 400), max(d.winfo_height(), 300)
+        a, z = self.wall
+        ra, ga, ba = int(a[1:3], 16), int(a[3:5], 16), int(a[5:7], 16)
+        rz, gz, bz = int(z[1:3], 16), int(z[3:5], 16), int(z[5:7], 16)
+        steps = 40
+        for i in range(steps):
+            t = i / (steps - 1)
+            col = "#%02x%02x%02x" % (int(ra + (rz - ra) * t), int(ga + (gz - ga) * t), int(ba + (bz - ba) * t))
+            d.create_rectangle(0, h * i / steps, w, h * (i + 1) / steps + 1, fill=col, outline="", tags="wall")
+        if self.logo_big:
+            d.create_image(w / 2, h / 2 - 20, image=self.logo_big, tags="wall")
+        d.create_text(w / 2, h / 2 + 120, text="HYPERIA", fill=GREEN, font=(FONT, 30, "bold"), tags="wall")
+        d.create_text(w / 2, h / 2 + 156, text="creative desktop shell", fill=MUT, font=(FONT, 11), tags="wall")
+        icons = [(n, g, c) for n, g, c in NATIVE_APPS] + [(n, g, c) for n, g, c, _ in WEB_APPS]
+        per_col = max(1, int((h - 20) // 92))
+        for i, (n, g, col) in enumerate(icons):
+            x = 20 + (i // per_col) * 92; y = 16 + (i % per_col) * 92
+            if x > w / 2 - 200 and x < w / 2 + 200: x += 0  # keep simple
+            tag = "ic%d" % i
+            rrect(d, x + 14, y, x + 62, y + 48, 12, fill=col, outline="", tags=("icon", tag))
+            d.create_text(x + 38, y + 24, text=g, fill="white", font=(FONT, 15, "bold"), tags=("icon", tag))
+            d.create_text(x + 38, y + 62, text=n, fill=TXT, font=(FONT, 9), width=86, tags=("icon", tag))
+            d.tag_bind(tag, "<Double-Button-1>", lambda e, n=n: self.launch(n))
+            d.tag_bind(tag, "<Enter>", lambda e: d.configure(cursor="hand2")); d.tag_bind(tag, "<Leave>", lambda e: d.configure(cursor=""))
+        d.tag_lower("wall")
 
-        # Actions
-        a = Card(p, "ACTIONS", height=280); a.pack(fill="x", pady=14)
-        row = tk.Frame(a.body, bg=CARD); row.pack(fill="x", pady=4)
-        PillButton(row, "Get VirtualBox", self.open_vbox_dl, w=150, fill=CARD2, fg=TXT).pack(side="left", padx=(0, 8))
-        PillButton(row, "Create HYPERIA VM", self.create_vm, w=170).pack(side="left", padx=(0, 8))
-        PillButton(row, "Start VM", self.start_vm, w=110).pack(side="left", padx=(0, 8))
-        PillButton(row, "Stop VM", self.stop_vm, w=110, fill=CARD2, fg=TXT).pack(side="left")
+    def tick(self):
+        self.clock.configure(text=time.strftime("%H:%M  %d/%m/%Y")); self.after(1000, self.tick)
 
-        tk.Label(a.body, text="Attach a Linux ISO (you download it yourself — HYPERIA never ships OS images):",
-                 bg=CARD, fg=MUT, font=(FONT, 9), wraplength=620, justify="left").pack(anchor="w", pady=(12, 4))
-        row = tk.Frame(a.body, bg=CARD); row.pack(fill="x")
-        tk.Entry(row, textvariable=self.iso_path, bg=CARD2, fg=TXT, insertbackground=TXT, relief="flat",
-                 font=(FONT, 9)).pack(side="left", fill="x", expand=True, ipady=6, padx=(0, 8))
-        PillButton(row, "Browse…", self.browse_iso, w=100, h=32, fill=CARD2, fg=TXT).pack(side="left", padx=(0, 8))
-        PillButton(row, "Attach ISO", self.attach_iso, w=110, h=32).pack(side="left")
+    # ---------- start menu ----------
+    def toggle_start(self):
+        if self.startmenu: self.close_start()
+        else: self.open_start()
 
-        row = tk.Frame(a.body, bg=CARD); row.pack(fill="x", pady=(12, 0))
-        PillButton(row, "Download Lubuntu ISO (official site)", self.open_lubuntu, w=280, fill=GREEN).pack(side="left")
-        tk.Label(a.body, text="Opens lubuntu.me/downloads — HYPERIA does not host or redistribute ISOs.",
-                 bg=CARD, fg=MUT, font=(FONT, 8)).pack(anchor="w", pady=(6, 0))
+    def close_start(self):
+        if self.startmenu: self.startmenu.destroy(); self.startmenu = None
 
-        self.log = tk.Text(p, height=6, bg="#0d0d0f", fg=TXT, relief="flat", font=("Consolas", 9),
-                           state="disabled", highlightthickness=1, highlightbackground=BORDER)
-        self.log.pack(fill="x", pady=(8, 0))
+    def open_start(self):
+        m = tk.Frame(self, bg=CARD, highlightthickness=1, highlightbackground=BORDER)
+        h = min(560, self.desk.winfo_height() - 20)
+        m.place(x=8, y=self.desk.winfo_height() - h - 6, width=440, height=h)
+        self.startmenu = m
+        head = tk.Frame(m, bg=CARD); head.pack(fill="x", padx=14, pady=(12, 6))
+        tk.Label(head, text="HYPERIA", bg=CARD, fg=GREEN, font=(FONT, 15, "bold")).pack(side="left")
+        tk.Label(head, text="v" + APP_VERSION, bg=CARD, fg=MUT, font=(FONT, 9)).pack(side="left", padx=8, pady=(6, 0))
+        q = tk.StringVar(); e = tk.Entry(m, textvariable=q, bg=CARD2, fg=TXT, insertbackground=TXT, relief="flat", font=(FONT, 10))
+        e.pack(fill="x", padx=14, ipady=6); e.insert(0, ""); e.focus_set()
+        lst = tk.Frame(m, bg=CARD); lst.pack(fill="both", expand=True, padx=8, pady=8)
+        allapps = [(n, g, c) for n, g, c in NATIVE_APPS] + [(n, g, c) for n, g, c, _ in WEB_APPS]
 
-    def build_about(self):
-        p = self.pages["About"]
-        c = Card(p, "ABOUT & UPDATES", height=280); c.pack(fill="x")
-        tk.Label(c.body, text="%s  version %s" % (APP, APP_VERSION), bg=CARD, fg=TXT, font=(FONT, 13, "bold")).pack(anchor="w")
-        tk.Label(c.body, text="HYPERIA is a branded front-end for Oracle VirtualBox — not a from-scratch operating system.\n"
-                 "It helps you create a VM named HYPERIA, attach an ISO you provide, and start or stop that VM.\n"
-                 "You must install VirtualBox separately. Linux ISOs are downloaded from their official sites.",
-                 bg=CARD, fg=MUT, font=(FONT, 9), justify="left", wraplength=600).pack(anchor="w", pady=8)
-        NoticeBox(c.body, COPYRIGHT, CARD, w=170, h=30, size=9).pack(anchor="w", pady=(4, 10))
-        row = tk.Frame(c.body, bg=CARD); row.pack(fill="x")
-        PillButton(row, "Check for updates", self.update_click, w=180, fill=CARD2, fg=TXT).pack(side="left")
-        self.upd = tk.StringVar(value=""); tk.Label(row, textvariable=self.upd, bg=CARD, fg=MUT, font=(FONT, 9)).pack(side="left", padx=12)
+        def fill(*_):
+            for w in lst.winfo_children(): w.destroy()
+            f = q.get().lower()
+            shown = [a for a in allapps if f in a[0].lower()]
+            for i, (n, g, col) in enumerate(shown):
+                r = tk.Frame(lst, bg=CARD, cursor="hand2"); r.grid(row=i // 2, column=i % 2, sticky="we", padx=3, pady=2)
+                tk.Label(r, text=g, bg=col, fg="white", font=(FONT, 10, "bold"), width=3).pack(side="left", padx=4, pady=3)
+                tk.Label(r, text=n, bg=CARD, fg=TXT, font=(FONT, 10), anchor="w", width=16).pack(side="left")
+                for w in (r,) + tuple(r.winfo_children()):
+                    w.bind("<Button-1>", lambda e, n=n: (self.close_start(), self.launch(n)))
+                    w.bind("<Enter>", lambda e, r=r: [x.configure(bg=CARD2) for x in (r, r.winfo_children()[1])])
+                    w.bind("<Leave>", lambda e, r=r: [x.configure(bg=CARD) for x in (r, r.winfo_children()[1])])
+            lst.columnconfigure(0, weight=1); lst.columnconfigure(1, weight=1)
+        q.trace_add("write", fill); fill()
+        e.bind("<Return>", lambda ev: (lambda s=[a for a in allapps if q.get().lower() in a[0].lower()]: s and (self.close_start(), self.launch(s[0][0])))())
+        foot = tk.Frame(m, bg=CARD); foot.pack(fill="x", padx=14, pady=8)
+        Pill(foot, "Settings", lambda: (self.close_start(), self.launch("Settings")), w=100, h=28, fill=CARD2, fg=TXT).pack(side="left")
+        Pill(foot, "Exit HYPERIA", self.quit_shell, w=120, h=28, fill="#3a1d1d", fg="#ffb3b3").pack(side="right")
 
-    def emit(self, msg):
-        self.q.put(("log", time.strftime("%H:%M:%S  ") + msg))
+    # ---------- windows ----------
+    def launch(self, name):
+        for n, g, col, url in WEB_APPS:
+            if n == name: return WebHost(self, n, g, col, url)
+        cls = {"HYPERIA Store": Store, "Files": Files, "Terminal": Terminal, "Settings": Settings, "Clock": Clock,
+               "Pong": Pong, "Fireout 1997": Fireout, "About": About}.get(name)
+        if cls: return cls(self)
 
-    def pump(self):
-        while not self.q.empty():
-            kind, v = self.q.get()
-            if kind == "status":
-                for k, val in v.items():
-                    if k in self.lbl: self.lbl[k].set(val)
-            elif kind == "log":
-                self.log.configure(state="normal"); self.log.insert("end", v + "\n"); self.log.see("end"); self.log.configure(state="disabled")
-            elif kind == "upd":
-                self.update_result(*v)
-        self.after(200, self.pump)
+    def add_win(self, w):
+        self.wins.append(w); self.refresh_task(); w.lift_()
 
-    def bg(self, fn, *a):
-        threading.Thread(target=fn, args=a, daemon=True).start()
+    def remove_win(self, w):
+        if w in self.wins: self.wins.remove(w)
+        self.refresh_task()
 
-    def refresh(self):
-        self.bg(self._refresh)
+    def focus_win(self, w):
+        for b in self.tasks.winfo_children():
+            b.configure(bg=CARD2 if getattr(b, "win", None) is w else "#0b0b0c")
 
-    def poll(self):
-        self.refresh(); self.after(4000, self.poll)
+    def refresh_task(self):
+        for b in self.tasks.winfo_children(): b.destroy()
+        for w in self.wins:
+            b = tk.Label(self.tasks, text="  " + w.title + "  ", bg="#0b0b0c", fg=TXT, font=(FONT, 9), cursor="hand2")
+            b.win = w; b.pack(side="left", padx=2, pady=8, fill="y")
+            b.bind("<Button-1>", lambda e, w=w: w.restore())
 
-    def _refresh(self):
-        vb, ver = find_vboxmanage()
-        self.vb, self.vb_ver = vb, ver
-        st = {"vbox": ("Found  " + ver) if vb else "Not installed", "vm": "—", "state": "—", "ram": "—", "iso": "—"}
-        if vb:
-            rc, out = vbox(vb, "showvminfo", VM_NAME, "--machinereadable")
-            if rc == 0:
-                info = parse_vminfo(out)
-                st["vm"] = VM_NAME
-                st["state"] = info.get("VMState", "unknown")
-                mem = info.get("memory", "")
-                st["ram"] = (mem + " MB") if mem else "—"
-                # find DVD
-                iso = "—"
-                for k, v in info.items():
-                    if "dvdimage" in k.lower() or (k.startswith("IDE") and v.lower().endswith(".iso")):
-                        iso = os.path.basename(v) if v and v != "none" else "—"
-                        if iso != "—": break
-                    if "ImageUUID" in k and ".iso" in info.get(k.replace("ImageUUID", "Image"), "").lower():
-                        pass
-                for k, v in info.items():
-                    if v.lower().endswith(".iso"):
-                        iso = os.path.basename(v); break
-                st["iso"] = iso
-            else:
-                st["vm"] = "Not created yet"
-                st["state"] = "absent"
-        self.q.put(("status", st))
+    def toggle_full(self):
+        self.full = not self.full; self.attributes("-fullscreen", self.full)
 
-    def open_vbox_dl(self):
-        webbrowser.open(VBOX_DOWNLOAD)
-        self.emit("Opened VirtualBox downloads page.")
-
-    def open_lubuntu(self):
-        webbrowser.open(LUBUNTU_DOWNLOAD)
-        self.emit("Opened official Lubuntu downloads: " + LUBUNTU_DOWNLOAD)
-
-    def browse_iso(self):
-        p = filedialog.askopenfilename(title="Select Linux ISO", filetypes=[("ISO images", "*.iso"), ("All files", "*.*")])
-        if p: self.iso_path.set(p)
-
-    def need_vb(self):
-        if self.vb: return True
-        if messagebox.askyesno(APP, "VirtualBox (VBoxManage) was not found.\n\nOpen the official VirtualBox download page?"):
-            self.open_vbox_dl()
-        return False
-
-    def create_vm(self):
-        if not self.need_vb(): return
-        self.bg(self._create_vm)
-
-    def _create_vm(self):
-        vb = self.vb
-        rc, out = vbox(vb, "showvminfo", VM_NAME)
-        if rc == 0:
-            self.emit("VM '%s' already exists." % VM_NAME); self._refresh(); return
-        self.emit("Creating VM '%s'…" % VM_NAME)
-        steps = [
-            ["createvm", "--name", VM_NAME, "--ostype", "Ubuntu_64", "--register"],
-            ["modifyvm", VM_NAME, "--memory", "2048", "--cpus", "2", "--vram", "128",
-             "--nic1", "nat", "--audio-driver", "none", "--firmware", "efi"],
-            ["storagectl", VM_NAME, "--name", "SATA", "--add", "sata", "--controller", "IntelAhci"],
-            ["createmedium", "disk", "--filename", os.path.join(os.path.expanduser("~"), "VirtualBox VMs", VM_NAME, VM_NAME + ".vdi"),
-             "--size", "20480", "--format", "VDI"],
-        ]
-        for s in steps:
-            rc, out = vbox(vb, *s, timeout=300)
-            self.emit(("OK" if rc == 0 else "FAIL") + ": " + " ".join(s[:3]) + ((" — " + out.strip()[:120]) if rc else ""))
-            if rc != 0 and s[0] != "createmedium":
-                # continue where possible
-                pass
-        # attach disk
-        vdi = os.path.join(os.path.expanduser("~"), "VirtualBox VMs", VM_NAME, VM_NAME + ".vdi")
-        if not os.path.isfile(vdi):
-            # VirtualBox may put it under Documents
-            alt = os.path.join(os.path.expandvars(r"%USERPROFILE%"), "VirtualBox VMs", VM_NAME, VM_NAME + ".vdi")
-            if os.path.isfile(alt): vdi = alt
-        rc, out = vbox(vb, "storageattach", VM_NAME, "--storagectl", "SATA", "--port", "0", "--device", "0",
-                       "--type", "hdd", "--medium", vdi)
-        self.emit(("Disk attached." if rc == 0 else "Disk attach: ") + ("" if rc == 0 else out.strip()[:150]))
-        rc, out = vbox(vb, "storagectl", VM_NAME, "--name", "IDE", "--add", "ide")
-        self.emit("IDE controller ready." if rc == 0 else ("IDE: " + out.strip()[:100]))
-        self.emit("VM created. Attach an ISO, then Start.")
-        self._refresh()
-
-    def attach_iso(self):
-        if not self.need_vb(): return
-        path = self.iso_path.get().strip()
-        if not path or not os.path.isfile(path):
-            messagebox.showwarning(APP, "Choose a valid .iso file first."); return
-        self.bg(self._attach_iso, path)
-
-    def _attach_iso(self, path):
-        vb = self.vb
-        # ensure IDE controller
-        vbox(vb, "storagectl", VM_NAME, "--name", "IDE", "--add", "ide")
-        rc, out = vbox(vb, "storageattach", VM_NAME, "--storagectl", "IDE", "--port", "0", "--device", "0",
-                       "--type", "dvddrive", "--medium", path)
-        self.emit(("ISO attached: " + os.path.basename(path)) if rc == 0 else ("Attach failed: " + out.strip()[:200]))
-        # boot from DVD first
-        vbox(vb, "modifyvm", VM_NAME, "--boot1", "dvd", "--boot2", "disk")
-        self._refresh()
-
-    def start_vm(self):
-        if not self.need_vb(): return
-        self.bg(self._start_vm)
-
-    def _start_vm(self):
-        rc, out = vbox(self.vb, "startvm", VM_NAME, "--type", "gui", timeout=60)
-        self.emit("Starting…" if rc == 0 else ("Start failed: " + out.strip()[:200]))
-        time.sleep(1); self._refresh()
-
-    def stop_vm(self):
-        if not self.need_vb(): return
-        self.bg(self._stop_vm)
-
-    def _stop_vm(self):
-        # ACPI power button first; force if needed
-        rc, out = vbox(self.vb, "controlvm", VM_NAME, "acpipowerbutton", timeout=30)
-        if rc != 0:
-            rc, out = vbox(self.vb, "controlvm", VM_NAME, "poweroff", timeout=30)
-            self.emit("Force power-off." if rc == 0 else ("Stop failed: " + out.strip()[:150]))
-        else:
-            self.emit("Sent ACPI power button (graceful shutdown).")
-        time.sleep(1); self._refresh()
-
-    def update_click(self):
-        self.upd.set("Checking…")
+    def check_updates(self):
         def job():
-            st, d = check_update(); self.q.put(("upd", (st, d)))
-        self.bg(job)
+            st, d = check_update(); self.after(0, lambda: self.show_update(st, d))
+        threading.Thread(target=job, daemon=True).start()
 
-    def update_result(self, st, d):
+    def show_update(self, st, d):
         if st != "newer":
-            self.upd.set(d); (messagebox.showinfo if st == "latest" else messagebox.showwarning)(APP, d); return
-        self.upd.set("Version %s available" % d["version"])
-        msg = "Version %s is available (you have %s).\n\n%s" % (d["version"], APP_VERSION, d["notes"] or "")
-        link = d.get("installer_url") or d["url"]
-        msg += "\n\nDownload and run the installer (close this app first)."
-        if link.lower().startswith(("https://", "http://")):
-            if messagebox.askyesno(APP, msg + "\n\nOpen the download in your browser?"):
-                webbrowser.open(link)
-        else:
-            messagebox.showinfo(APP, msg)
+            (messagebox.showinfo if st == "latest" else messagebox.showwarning)(APP, d); return
+        if d["link"].startswith("http") and messagebox.askyesno(APP, "HYPERIA %s is available (you have %s).\n\n%s\n\nOpen the installer download?" % (d["version"], APP_VERSION, d["notes"])):
+            webbrowser.open(d["link"])
+
+    def quit_shell(self):
+        if messagebox.askyesno(APP, "Exit HYPERIA?"): self.destroy()
 
 
 if __name__ == "__main__":
-    if single_instance():
-        App().mainloop()
+    if len(sys.argv) >= 3 and sys.argv[1] == "--web":
+        web_main(sys.argv[2], sys.argv[3] if len(sys.argv) > 3 else "Web")
+    else:
+        Shell().mainloop()

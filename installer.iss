@@ -1,4 +1,4 @@
-#define MyVer "1.0.0"
+#define MyVer "1.1.0"
 [Setup]
 AppId={{B2C3D4E5-F6A7-8901-BCDE-HYPERIA00001}}
 AppName=HYPERIA

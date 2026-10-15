@@ -1,26 +1,22 @@
 # HYPERIA
 
-A Windows **VirtualBox front-end** from EX Inc.
+A creative **desktop shell** for Windows from EX Inc.: wallpaper, taskbar, Start menu, desktop icons and windows that open inside the shell.
 
-**Honest note:** HYPERIA is a branded launcher/manager for Oracle VirtualBox — **not** a from-scratch operating system. It helps you create a VM named `HYPERIA`, attach an ISO you provide, and start or stop that VM.
+**Honest note:** HYPERIA is an app that runs on Windows. It is **not** a real operating system or kernel. Web apps open the real websites (in a HYPERIA web window using Microsoft Edge WebView2, or your default browser); HYPERIA does not copy or host their content.
 
-## Features
-- Detects VirtualBox (`VBoxManage`); offers the official download page if missing.
-- Create a `HYPERIA` VM (2 GB RAM, 20 GB disk, Ubuntu_64 / EFI).
-- Browse and attach a Linux ISO; boot order DVD then disk.
-- Start / Stop (ACPI power button, then force power-off if needed).
-- **Download Lubuntu ISO** opens the official [Lubuntu downloads](https://lubuntu.me/downloads/) page. HYPERIA does **not** host or redistribute OS images.
-- Check for updates; ©2026 EX Inc.
+## Apps
+- **Built in:** HYPERIA Store, Files, Terminal (PowerShell), Settings (wallpaper, fullscreen, updates), Clock, Pong, **Fireout 1997** (original retro top-down racer), About.
+- **Web:** Browser, YouTube, Discord, Steam, itch.io, Speed Test, Reddit, Wikipedia, Twitch, Weather, Sport, Amazon, Temu, Xbox, Cloud Gaming, Google Earth, Community.
+
+Shortcuts: F11 fullscreen, Esc closes the Start menu.
 
 ## Install
-1. Download **`HYPERIA Setup <version>.exe`** from [Releases](../../releases/latest) and run it (per-user, no admin needed for install).
-2. Install [Oracle VirtualBox](https://www.virtualbox.org/wiki/Downloads) separately if you do not already have it.
-3. SmartScreen may warn (unsigned): **More info → Run anyway**.
+Download **`HYPERIA Setup <version>.exe`** from [Releases](../../releases/latest) and run it (per-user, no admin). The app is unsigned, so SmartScreen may warn: **More info → Run anyway**.
 
 ## Build (Windows)
 ```
-pip install pyinstaller
-pyinstaller --onedir --noconsole --name HYPERIA --icon logo.ico --version-file version.txt --add-data "logo.ico;." --add-data "logo256.png;." --add-data "logo48.png;." hyperia.py
+pip install pyinstaller pywebview
+pyinstaller --onedir --noconsole --name HYPERIA --icon logo.ico --version-file version.txt --add-data "logo.ico;." --add-data "logo256.png;." --add-data "logo48.png;." --collect-all webview hyperia.py
 ```
 Installer: compile `installer.iss` with Inno Setup 6.
 
