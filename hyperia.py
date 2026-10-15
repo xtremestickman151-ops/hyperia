@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 APP = "HYPERIA"
-APP_VERSION = "1.1.8"
+APP_VERSION = "1.1.9"
 COPYRIGHT = "\u00a92026 EX Inc."
 UPDATE_URL = "https://raw.githubusercontent.com/xtremestickman151-ops/hyperia/main/latest.json"
 NOWIN = 0x08000000
@@ -423,7 +423,9 @@ class Settings(Win):
         tk.Label(b, text="Display", bg=PANEL, fg=TXT, font=(FONT, 12, "bold")).pack(anchor="w", padx=16, pady=(18, 4))
         Pill(b, "Toggle fullscreen (F11)", shell.toggle_full, w=200, fill=CARD2, fg=TXT, bg=PANEL).pack(anchor="w", padx=16)
         tk.Label(b, text="Updates", bg=PANEL, fg=TXT, font=(FONT, 12, "bold")).pack(anchor="w", padx=16, pady=(18, 4))
-        Pill(b, "Check for updates", shell.check_updates, w=180, bg=PANEL).pack(anchor="w", padx=16)
+        urow = tk.Frame(b, bg=PANEL); urow.pack(anchor="w", padx=16)
+        Pill(urow, "Check for updates", shell.check_updates, w=180, bg=PANEL).pack(side="left")
+        Pill(urow, "Full screen", shell.toggle_full, w=120, fill=CARD2, fg=TXT, bg=PANEL).pack(side="left", padx=8)
         tk.Label(b, text="HYPERIA %s · %s" % (APP_VERSION, COPYRIGHT), bg=PANEL, fg=MUT, font=(FONT, 9)).pack(anchor="w", padx=16, pady=(18, 0))
 
 
@@ -566,6 +568,7 @@ class Shell(tk.Tk):
         foot = tk.Frame(m, bg=CARD); foot.pack(fill="x", padx=14, pady=8)
         Pill(foot, "Settings", lambda: (self.close_start(), self.launch("Settings")), w=100, h=28, fill=CARD2, fg=TXT).pack(side="left")
         Pill(foot, "⟳ Check for updates", lambda: (self.close_start(), self.check_updates()), w=160, h=28, fill=GREEN, fg="#0a1200").pack(side="left", padx=6)
+        Pill(foot, "Full screen", lambda: (self.close_start(), self.toggle_full()), w=110, h=28, fill=CARD2, fg=TXT).pack(side="left", padx=6)
         Pill(foot, "Exit HYPERIA", self.quit_shell, w=120, h=28, fill="#3a1d1d", fg="#ffb3b3").pack(side="right")
 
     # ---------- windows ----------
