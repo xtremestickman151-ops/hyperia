@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 APP = "HYPERIA"
-APP_VERSION = "1.1.3"
+APP_VERSION = "1.1.4"
 COPYRIGHT = "\u00a92026 EX Inc."
 UPDATE_URL = "https://raw.githubusercontent.com/xtremestickman151-ops/hyperia/main/latest.json"
 NOWIN = 0x08000000
@@ -37,7 +37,7 @@ WEB_APPS = [
 NATIVE_APPS = [
     ("HYPERIA Store", "▦", GREEN), ("Files", "▤", "#e5a524"), ("Terminal", ">_", "#3a3a3d"),
     ("Settings", "⚙", "#8e8e93"), ("Clock", "◷", "#5ac8fa"), ("Pong", "▮", "#ffffff"),
-    ("Fireout 1997", "🔥", "#ff453a"), ("About", "ⓘ", GREEN),
+    ("Fireout 1997", "🔥", "#ff453a"),
 ]
 
 
@@ -425,7 +425,8 @@ class Settings(Win):
         Pill(b, "Toggle fullscreen (F11)", shell.toggle_full, w=200, fill=CARD2, fg=TXT, bg=PANEL).pack(anchor="w", padx=16)
         tk.Label(b, text="Updates", bg=PANEL, fg=TXT, font=(FONT, 12, "bold")).pack(anchor="w", padx=16, pady=(18, 4))
         Pill(b, "Check for updates", shell.check_updates, w=180, bg=PANEL).pack(anchor="w", padx=16)
-        tk.Label(b, text="HYPERIA %s · %s" % (APP_VERSION, COPYRIGHT), bg=PANEL, fg=MUT, font=(FONT, 9)).pack(anchor="w", padx=16, pady=18)
+        tk.Label(b, text="HYPERIA %s · %s" % (APP_VERSION, COPYRIGHT), bg=PANEL, fg=MUT, font=(FONT, 9)).pack(anchor="w", padx=16, pady=(18, 0))
+        tk.Label(b, text="A creative desktop shell that runs on Windows, not a real operating system.", bg=PANEL, fg=MUT, font=(FONT, 8)).pack(anchor="w", padx=16)
 
 
 class Store(Win):
@@ -441,21 +442,6 @@ class Store(Win):
             for w in (f,) + tuple(f.winfo_children()):
                 w.bind("<Button-1>", lambda e, n=n: shell.launch(n))
         for c in range(4): grid.columnconfigure(c, weight=1)
-
-
-class About(Win):
-    def __init__(self, shell):
-        super().__init__(shell, "About HYPERIA", 520, 360)
-        b = self.body
-        if shell.logo_big: tk.Label(b, image=shell.logo_big, bg=PANEL).pack(pady=(16, 4))
-        tk.Label(b, text="HYPERIA  %s" % APP_VERSION, bg=PANEL, fg=TXT, font=(FONT, 16, "bold")).pack()
-        tk.Label(b, text="HYPERIA is a creative desktop shell that runs as an app on Windows.\n"
-                 "It is not a real operating system or kernel. Web apps open the real sites\n"
-                 "in a HYPERIA web window (Edge WebView2); games and tools are built in.",
-                 bg=PANEL, fg=MUT, font=(FONT, 9), justify="center").pack(pady=8)
-        box = tk.Canvas(b, width=170, height=30, bg=PANEL, highlightthickness=0); box.pack(pady=4)
-        rrect(box, 1, 1, 169, 29, 9, fill=CARD, outline=BORDER); box.create_text(85, 15, text=COPYRIGHT, fill="#c7c7cc", font=(FONT, 9))
-        Pill(b, "Check for updates", shell.check_updates, w=180, bg=PANEL).pack(pady=8)
 
 
 class Shell(tk.Tk):
@@ -576,7 +562,7 @@ class Shell(tk.Tk):
         for n, g, col, url in WEB_APPS:
             if n == name: return open_web(url, n)
         cls = {"HYPERIA Store": Store, "Files": Files, "Terminal": Terminal, "Settings": Settings, "Clock": Clock,
-               "Pong": Pong, "Fireout 1997": Fireout, "About": About}.get(name)
+               "Pong": Pong, "Fireout 1997": Fireout}.get(name)
         if cls: return cls(self)
 
     def add_win(self, w):
