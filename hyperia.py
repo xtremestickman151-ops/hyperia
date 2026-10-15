@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import messagebox, filedialog
 
 APP = "HYPERIA"
-APP_VERSION = "1.1.20"
+APP_VERSION = "1.1.21"
 COPYRIGHT = "\u00a92026 EX Inc."
 UPDATE_URL = "https://raw.githubusercontent.com/xtremestickman151-ops/hyperia/main/latest.json"
 NOWIN = 0x08000000
@@ -110,80 +110,143 @@ def web_main(url, title):
         import webview
         win_holder = {"w": None}
 
-        class Api(object):
-            def exit_to_hyperia(self):
-                """Close this web window and try to return focus to HYPERIA."""
+        def focus_hyperia_shell():
+            if os.name != "nt":
+                return
+            try:
+                import ctypes
+                user32 = ctypes.windll.user32
                 try:
-                    if os.name == "nt":
-                        import ctypes
-                        user32 = ctypes.windll.user32
-                        hwnd = user32.FindWindowW(None, APP)
-                        if hwnd:
-                            user32.ShowWindow(hwnd, 9)  # SW_RESTORE
-                            user32.SetForegroundWindow(hwnd)
+                    user32.AllowSetForegroundWindow(-1)
                 except Exception:
                     pass
+                hwnd = user32.FindWindowW(None, APP)
+                if not hwnd:
+                    found = []
+
+                    @ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)
+                    def _enum(h, _):
+                        try:
+                            n = user32.GetWindowTextLengthW(h) + 1
+                            buf = ctypes.create_unicode_buffer(n)
+                            user32.GetWindowTextW(h, buf, n)
+                            title = buf.value or ""
+                            if title == APP or title.startswith(APP + " "):
+                                found.append(h)
+                        except Exception:
+                            pass
+                        return True
+
+                    user32.EnumWindows(_enum, 0)
+                    hwnd = found[0] if found else None
+                if hwnd:
+                    user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+                    user32.BringWindowToTop(hwnd)
+                    user32.SetForegroundWindow(hwnd)
+            except Exception:
+                pass
+
+        class Api(object):
+            def exit_to_hyperia(self):
+                """Close this web window only and return focus to the HYPERIA shell."""
+                focus_hyperia_shell()
                 w = win_holder.get("w")
-                if w is not None:
-                    try:
+                try:
+                    if w is not None:
                         w.destroy()
-                    except Exception:
-                        pass
+                except Exception:
+                    pass
+                try:
+                    for ww in list(getattr(webview, "windows", []) or []):
+                        try:
+                            ww.destroy()
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
+                focus_hyperia_shell()
+                # This process is only the web helper (--web); end it if destroy stalled.
+                try:
+                    threading.Timer(0.35, lambda: os._exit(0)).start()
+                except Exception:
+                    pass
+                return True
 
         def inject(_window=None):
             w = win_holder.get("w")
             if w is None:
                 return
-            # Shadow-DOM overlay pinned to the visual viewport (windowed + fullscreen).
             js = r"""
 (function () {
   try {
     var HOST_ID = 'hyperia-exit-host';
+    function callExit() {
+      function invoke() {
+        try {
+          var api = window.pywebview && window.pywebview.api;
+          if (!api) return false;
+          var fn = api.exit_to_hyperia || api.exitToHyperia;
+          if (!fn) return false;
+          var r = fn.call(api);
+          if (r && typeof r.then === 'function') {
+            try { r.then(function () {}, function () {}); } catch (e) {}
+          }
+          return true;
+        } catch (e) { return false; }
+      }
+      if (invoke()) return;
+      window.addEventListener('pywebviewready', function () { invoke(); }, { once: true });
+      setTimeout(invoke, 30);
+      setTimeout(invoke, 120);
+      setTimeout(invoke, 400);
+    }
     function ensure() {
       var host = document.getElementById(HOST_ID);
       if (!host) {
         host = document.createElement('div');
         host.id = HOST_ID;
         host.setAttribute('data-hyperia', 'exit-host');
-        var shadow = host.attachShadow({mode: 'open'});
+        var shadow = host.attachShadow({ mode: 'open' });
         var style = document.createElement('style');
         style.textContent = [
           ':host { all: initial; }',
           '#wrap {',
-          '  position: fixed;',
-          '  inset: 0;',
-          '  width: 100%;',
-          '  height: 100%;',
-          '  margin: 0;',
-          '  padding: 0;',
-          '  pointer-events: none;',
-          '  z-index: 2147483647;',
-          '  box-sizing: border-box;',
-          '  overflow: visible;',
+          '  position: fixed; inset: 0; width: 100%; height: 100%;',
+          '  margin: 0; padding: 0; pointer-events: none; z-index: 2147483647;',
+          '  box-sizing: border-box; overflow: visible;',
           '}',
           '#btn {',
           '  position: absolute;',
           '  top: max(12px, env(safe-area-inset-top, 0px));',
           '  right: max(12px, env(safe-area-inset-right, 0px));',
-          '  left: auto;',
-          '  bottom: auto;',
-          '  max-width: calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));',
+          '  left: auto; bottom: auto;',
+          '  max-width: calc(100% - 24px);',
+          '  box-sizing: border-box;',
           '  transform: none !important;',
           '  pointer-events: auto;',
-          '  padding: 8px 14px;',
-          '  border-radius: 16px;',
-          '  border: 1px solid #3a3a3d;',
-          '  background: #1c1c1e;',
-          '  color: #afd067;',
-          '  font: bold 12px "Segoe UI", sans-serif;',
+          '  appearance: none; -webkit-appearance: none;',
+          '  display: inline-flex; align-items: center; justify-content: center;',
+          '  gap: 6px;',
+          '  min-height: 36px;',
+          '  padding: 9px 18px;',
+          '  border-radius: 999px;',
+          '  border: 1px solid #7fa83a;',
+          '  background: #afd067;',
+          '  color: #0a1200;',
+          '  font: 600 13px/1.2 "Segoe UI", system-ui, sans-serif;',
+          '  letter-spacing: 0.01em;',
           '  cursor: pointer;',
-          '  box-shadow: 0 4px 16px rgba(0,0,0,.45);',
+          '  user-select: none;',
+          '  box-shadow: 0 6px 18px rgba(0,0,0,.40);',
           '  white-space: nowrap;',
           '  overflow: hidden;',
           '  text-overflow: ellipsis;',
+          '  outline: none;',
           '}',
-          '#btn:hover { background: #2a2a2d; }'
-        ].join('\\n');
+          '#btn:hover { background: #c5e080; border-color: #afd067; }',
+          '#btn:active { background: #7fa83a; color: #061000; }',
+          '#btn:focus-visible { box-shadow: 0 0 0 3px rgba(175,208,103,.45), 0 6px 18px rgba(0,0,0,.40); }'
+        ].join('\n');
         var wrap = document.createElement('div');
         wrap.id = 'wrap';
         var btn = document.createElement('button');
@@ -191,24 +254,26 @@ def web_main(url, title):
         btn.type = 'button';
         btn.textContent = 'Exit to HYPERIA';
         btn.setAttribute('aria-label', 'Exit to HYPERIA');
-        btn.addEventListener('click', function (ev) {
-          ev.preventDefault();
-          ev.stopPropagation();
-          try { window.pywebview.api.exit_to_hyperia(); } catch (e) {}
+        btn.title = 'Close this web app and return to HYPERIA';
+        function onActivate(ev) {
+          try { ev.preventDefault(); ev.stopPropagation(); if (ev.stopImmediatePropagation) ev.stopImmediatePropagation(); } catch (e) {}
+          callExit();
+        }
+        btn.addEventListener('click', onActivate, true);
+        btn.addEventListener('pointerup', onActivate, true);
+        btn.addEventListener('keydown', function (ev) {
+          if (ev.key === 'Enter' || ev.key === ' ') onActivate(ev);
         }, true);
         wrap.appendChild(btn);
         shadow.appendChild(style);
         shadow.appendChild(wrap);
-        host._hyperiaShadow = shadow;
       }
-      // Prefer fullscreen element so the control stays visible in page/video fullscreen.
       var root = document.fullscreenElement || document.webkitFullscreenElement || document.documentElement;
       try {
         if (host.parentNode !== root) root.appendChild(host);
       } catch (e) {
         try { document.documentElement.appendChild(host); } catch (e2) {}
       }
-      // Keep host itself out of page layout flow / transforms as much as possible.
       host.style.cssText = [
         'all: initial',
         'position: fixed',
@@ -225,18 +290,13 @@ def web_main(url, title):
         'transform: none',
         'contain: none'
       ].join(';');
-      // Sync to visualViewport when zoomed / on-screen keyboard shifts layout.
       try {
         var vv = window.visualViewport;
         if (vv) {
-          var top = (vv.offsetTop || 0) + 'px';
-          var left = (vv.offsetLeft || 0) + 'px';
-          var width = (vv.width || window.innerWidth) + 'px';
-          var height = (vv.height || window.innerHeight) + 'px';
-          host.style.top = top;
-          host.style.left = left;
-          host.style.width = width;
-          host.style.height = height;
+          host.style.top = (vv.offsetTop || 0) + 'px';
+          host.style.left = (vv.offsetLeft || 0) + 'px';
+          host.style.width = (vv.width || window.innerWidth) + 'px';
+          host.style.height = (vv.height || window.innerHeight) + 'px';
           host.style.right = 'auto';
           host.style.bottom = 'auto';
         }
@@ -257,7 +317,6 @@ def web_main(url, title):
           window.visualViewport.addEventListener('scroll', refresh);
         }
       } catch (e) {}
-      // Light watchdog for SPA navigations that skip load events.
       setInterval(refresh, 1500);
     }
   } catch (e) {}
@@ -278,6 +337,7 @@ def web_main(url, title):
     except Exception as e:
         r = tk.Tk(); r.withdraw()
         messagebox.showerror(APP, WEBVIEW2_MSG + "\n\nDetails: %s" % e); r.destroy()
+
 
 
 def rrect(c, x1, y1, x2, y2, r, **kw):
