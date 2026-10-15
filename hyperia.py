@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 APP = "HYPERIA"
-APP_VERSION = "1.1.2"
+APP_VERSION = "1.1.3"
 COPYRIGHT = "\u00a92026 EX Inc."
 UPDATE_URL = "https://raw.githubusercontent.com/xtremestickman151-ops/hyperia/main/latest.json"
 NOWIN = 0x08000000
@@ -482,6 +482,9 @@ class Shell(tk.Tk):
         self.start_btn.bind("<Button-1>", lambda e: self.toggle_start())
         self.tasks = tk.Frame(self.task, bg="#0b0b0c"); self.tasks.pack(side="left", fill="y", padx=8)
         self.clock = tk.Label(self.task, bg="#0b0b0c", fg=TXT, font=(FONT, 10)); self.clock.pack(side="right", padx=14)
+        upd = tk.Label(self.task, text=" ⟳ Updates ", bg="#0b0b0c", fg=GREEN, font=(FONT, 9, "bold"), cursor="hand2")
+        upd.pack(side="right", padx=4); upd.bind("<Button-1>", lambda e: self.check_updates())
+        upd.bind("<Enter>", lambda e: upd.configure(bg=CARD2)); upd.bind("<Leave>", lambda e: upd.configure(bg="#0b0b0c"))
         tk.Label(self.task, text=COPYRIGHT, bg="#0b0b0c", fg=MUT, font=(FONT, 8)).pack(side="right", padx=8)
 
         self.desk.bind("<Configure>", lambda e: self.draw_desk())
@@ -490,7 +493,7 @@ class Shell(tk.Tk):
         self.bind("<Super_L>", lambda e: self.toggle_start())
         self.startmenu = None; self.tick()
         if os.environ.get("HYPERIA_DEMO"):  # used only for screenshots
-            self.after(1200, lambda: (self.launch("Fireout 1997"), self.launch("HYPERIA Store")))
+            self.after(1200, self.open_start)
 
     # ---------- desktop ----------
     def set_wall(self, a, z):
@@ -565,6 +568,7 @@ class Shell(tk.Tk):
         e.bind("<Return>", lambda ev: (lambda s=[a for a in allapps if q.get().lower() in a[0].lower()]: s and (self.close_start(), self.launch(s[0][0])))())
         foot = tk.Frame(m, bg=CARD); foot.pack(fill="x", padx=14, pady=8)
         Pill(foot, "Settings", lambda: (self.close_start(), self.launch("Settings")), w=100, h=28, fill=CARD2, fg=TXT).pack(side="left")
+        Pill(foot, "⟳ Check for updates", lambda: (self.close_start(), self.check_updates()), w=160, h=28, fill=GREEN, fg="#0a1200").pack(side="left", padx=6)
         Pill(foot, "Exit HYPERIA", self.quit_shell, w=120, h=28, fill="#3a1d1d", fg="#ffb3b3").pack(side="right")
 
     # ---------- windows ----------
