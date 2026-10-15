@@ -1,7 +1,7 @@
 {
-  "version": "1.1.1",
-  "url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.1/HYPERIA.Setup.1.1.1.exe",
-  "full_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.1/HYPERIA.zip",
-  "installer_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.1/HYPERIA.Setup.1.1.1.exe",
-  "notes": "Web apps open only inside HYPERIA (Edge WebView2). If WebView2 is missing you get a clear install message. Run the installer over your existing install."
+  "version": "1.1.2",
+  "url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.2/HYPERIA.Setup.1.1.2.exe",
+  "full_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.2/HYPERIA.zip",
+  "installer_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.2/HYPERIA.Setup.1.1.2.exe",
+  "notes": "Web apps open straight away in the HYPERIA web window, with no launcher step. Run the installer over your existing install."
 }
