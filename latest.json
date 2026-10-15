@@ -1,7 +1,7 @@
 {
-  "version": "1.1.7",
-  "url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.7/HYPERIA.Setup.1.1.7.exe",
-  "full_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.7/HYPERIA.zip",
-  "installer_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.7/HYPERIA.Setup.1.1.7.exe",
-  "notes": "The Browser app is now called EX SAFARIA LITE."
+  "version": "1.1.8",
+  "url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.8/HYPERIA.Setup.1.1.8.exe",
+  "full_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.8/HYPERIA.zip",
+  "installer_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.8/HYPERIA.Setup.1.1.8.exe",
+  "notes": "The Community app has been removed."
 }
