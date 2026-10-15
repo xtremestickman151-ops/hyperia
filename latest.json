@@ -1,8 +1,8 @@
 {
-  "version": "1.1.15",
-  "url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.15/HYPERIA.Setup.1.1.15.exe",
-  "full_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.15/HYPERIA.zip",
-  "installer_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.15/HYPERIA.Setup.1.1.15.exe",
-  "update_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.15/HYPERIA-update-1.1.15.zip",
-  "notes": "EX SAFARIA LITE homepage is now Bing."
+  "version": "1.1.16",
+  "url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.16/HYPERIA.Setup.1.1.16.exe",
+  "full_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.16/HYPERIA.zip",
+  "installer_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.16/HYPERIA.Setup.1.1.16.exe",
+  "update_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.16/HYPERIA-update-1.1.16.zip",
+  "notes": "HYPERIA Store title bar: maximise / restore button."
 }
