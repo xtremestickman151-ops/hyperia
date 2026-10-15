@@ -1,8 +1,8 @@
 {
-  "version": "1.1.20",
-  "url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.20/HYPERIA.Setup.1.1.20.exe",
-  "full_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.20/HYPERIA.zip",
-  "installer_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.20/HYPERIA.Setup.1.1.20.exe",
-  "update_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.20/HYPERIA-update-1.1.20.zip",
-  "notes": "Exit to HYPERIA stays visible inside the web window (windowed and fullscreen)."
+  "version": "1.1.21",
+  "url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.21/HYPERIA.Setup.1.1.21.exe",
+  "full_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.21/HYPERIA.zip",
+  "installer_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.21/HYPERIA.Setup.1.1.21.exe",
+  "update_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.21/HYPERIA-update-1.1.21.zip",
+  "notes": "Exit to HYPERIA restyled (EXOS pill) and click-to-return hardened."
 }
