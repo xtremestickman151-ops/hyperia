@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import messagebox, filedialog
 
 APP = "HYPERIA"
-APP_VERSION = "1.1.19"
+APP_VERSION = "1.1.20"
 COPYRIGHT = "\u00a92026 EX Inc."
 UPDATE_URL = "https://raw.githubusercontent.com/xtremestickman151-ops/hyperia/main/latest.json"
 NOWIN = 0x08000000
@@ -134,29 +134,135 @@ def web_main(url, title):
             w = win_holder.get("w")
             if w is None:
                 return
-            js = (
-                "(function(){"
-                "try{"
-                "var id='hyperia-exit-btn';"
-                "var old=document.getElementById(id); if(old) old.remove();"
-                "var b=document.createElement('button');"
-                "b.id=id; b.type='button'; b.textContent='Exit to HYPERIA';"
-                "b.setAttribute('aria-label','Exit to HYPERIA');"
-                "b.style.cssText=["
-                "'position:fixed','top:10px','right:10px','z-index:2147483647',"
-                "'padding:8px 14px','border-radius:16px','border:1px solid #3a3a3d',"
-                "'background:#1c1c1e','color:#afd067','font:bold 12px Segoe UI,sans-serif',"
-                "'cursor:pointer','box-shadow:0 4px 16px rgba(0,0,0,.45)'"
-                "].join(';');"
-                "b.onmouseenter=function(){b.style.background='#2a2a2d';};"
-                "b.onmouseleave=function(){b.style.background='#1c1c1e';};"
-                "b.onclick=function(ev){ev.preventDefault();ev.stopPropagation();"
-                "try{window.pywebview.api.exit_to_hyperia();}catch(e){}"
-                "};"
-                " (document.body||document.documentElement).appendChild(b);"
-                "}catch(e){}"
-                "})();"
-            )
+            # Shadow-DOM overlay pinned to the visual viewport (windowed + fullscreen).
+            js = r"""
+(function () {
+  try {
+    var HOST_ID = 'hyperia-exit-host';
+    function ensure() {
+      var host = document.getElementById(HOST_ID);
+      if (!host) {
+        host = document.createElement('div');
+        host.id = HOST_ID;
+        host.setAttribute('data-hyperia', 'exit-host');
+        var shadow = host.attachShadow({mode: 'open'});
+        var style = document.createElement('style');
+        style.textContent = [
+          ':host { all: initial; }',
+          '#wrap {',
+          '  position: fixed;',
+          '  inset: 0;',
+          '  width: 100%;',
+          '  height: 100%;',
+          '  margin: 0;',
+          '  padding: 0;',
+          '  pointer-events: none;',
+          '  z-index: 2147483647;',
+          '  box-sizing: border-box;',
+          '  overflow: visible;',
+          '}',
+          '#btn {',
+          '  position: absolute;',
+          '  top: max(12px, env(safe-area-inset-top, 0px));',
+          '  right: max(12px, env(safe-area-inset-right, 0px));',
+          '  left: auto;',
+          '  bottom: auto;',
+          '  max-width: calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));',
+          '  transform: none !important;',
+          '  pointer-events: auto;',
+          '  padding: 8px 14px;',
+          '  border-radius: 16px;',
+          '  border: 1px solid #3a3a3d;',
+          '  background: #1c1c1e;',
+          '  color: #afd067;',
+          '  font: bold 12px "Segoe UI", sans-serif;',
+          '  cursor: pointer;',
+          '  box-shadow: 0 4px 16px rgba(0,0,0,.45);',
+          '  white-space: nowrap;',
+          '  overflow: hidden;',
+          '  text-overflow: ellipsis;',
+          '}',
+          '#btn:hover { background: #2a2a2d; }'
+        ].join('\\n');
+        var wrap = document.createElement('div');
+        wrap.id = 'wrap';
+        var btn = document.createElement('button');
+        btn.id = 'btn';
+        btn.type = 'button';
+        btn.textContent = 'Exit to HYPERIA';
+        btn.setAttribute('aria-label', 'Exit to HYPERIA');
+        btn.addEventListener('click', function (ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          try { window.pywebview.api.exit_to_hyperia(); } catch (e) {}
+        }, true);
+        wrap.appendChild(btn);
+        shadow.appendChild(style);
+        shadow.appendChild(wrap);
+        host._hyperiaShadow = shadow;
+      }
+      // Prefer fullscreen element so the control stays visible in page/video fullscreen.
+      var root = document.fullscreenElement || document.webkitFullscreenElement || document.documentElement;
+      try {
+        if (host.parentNode !== root) root.appendChild(host);
+      } catch (e) {
+        try { document.documentElement.appendChild(host); } catch (e2) {}
+      }
+      // Keep host itself out of page layout flow / transforms as much as possible.
+      host.style.cssText = [
+        'all: initial',
+        'position: fixed',
+        'inset: 0',
+        'width: 100vw',
+        'height: 100vh',
+        'max-width: 100vw',
+        'max-height: 100vh',
+        'margin: 0',
+        'padding: 0',
+        'border: 0',
+        'pointer-events: none',
+        'z-index: 2147483647',
+        'transform: none',
+        'contain: none'
+      ].join(';');
+      // Sync to visualViewport when zoomed / on-screen keyboard shifts layout.
+      try {
+        var vv = window.visualViewport;
+        if (vv) {
+          var top = (vv.offsetTop || 0) + 'px';
+          var left = (vv.offsetLeft || 0) + 'px';
+          var width = (vv.width || window.innerWidth) + 'px';
+          var height = (vv.height || window.innerHeight) + 'px';
+          host.style.top = top;
+          host.style.left = left;
+          host.style.width = width;
+          host.style.height = height;
+          host.style.right = 'auto';
+          host.style.bottom = 'auto';
+        }
+      } catch (e) {}
+      return host;
+    }
+    ensure();
+    if (!window.__hyperiaExitHooked) {
+      window.__hyperiaExitHooked = true;
+      var refresh = function () { try { ensure(); } catch (e) {} };
+      window.addEventListener('resize', refresh, true);
+      window.addEventListener('orientationchange', refresh, true);
+      document.addEventListener('fullscreenchange', refresh, true);
+      document.addEventListener('webkitfullscreenchange', refresh, true);
+      try {
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener('resize', refresh);
+          window.visualViewport.addEventListener('scroll', refresh);
+        }
+      } catch (e) {}
+      // Light watchdog for SPA navigations that skip load events.
+      setInterval(refresh, 1500);
+    }
+  } catch (e) {}
+})();
+"""
             try:
                 w.evaluate_js(js)
             except Exception:
