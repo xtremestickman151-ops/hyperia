@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 APP = "HYPERIA"
-APP_VERSION = "1.1.16"
+APP_VERSION = "1.1.17"
 COPYRIGHT = "\u00a92026 EX Inc."
 UPDATE_URL = "https://raw.githubusercontent.com/xtremestickman151-ops/hyperia/main/latest.json"
 NOWIN = 0x08000000
@@ -515,6 +515,11 @@ class Shell(tk.Tk):
         if self.logo_small: self.start_btn.configure(image=self.logo_small, compound="left", text="  HYPERIA  ")
         self.start_btn.pack(side="left", padx=6, fill="y")
         self.start_btn.bind("<Button-1>", lambda e: self.toggle_start())
+        self.store_pin = tk.Label(self.task, text="  ▦ Store  ", bg="#0b0b0c", fg=GREEN, font=(FONT, 9, "bold"), cursor="hand2")
+        self.store_pin.pack(side="left", padx=2, fill="y")
+        self.store_pin.bind("<Button-1>", lambda e: self.pin_store())
+        self.store_pin.bind("<Enter>", lambda e: self.store_pin.configure(bg=CARD2))
+        self.store_pin.bind("<Leave>", lambda e: self.store_pin.configure(bg="#0b0b0c"))
         self.tasks = tk.Frame(self.task, bg="#0b0b0c"); self.tasks.pack(side="left", fill="y", padx=8)
         self.clock = tk.Label(self.task, bg="#0b0b0c", fg=TXT, font=(FONT, 10)); self.clock.pack(side="right", padx=14)
         upd = tk.Label(self.task, text=" ⟳ Updates ", bg="#0b0b0c", fg=GREEN, font=(FONT, 9, "bold"), cursor="hand2")
@@ -617,6 +622,14 @@ class Shell(tk.Tk):
         self.fs_pill.pack(side="left", padx=6)
 
     # ---------- windows ----------
+    def pin_store(self):
+        """Pinned taskbar shortcut: focus existing Store or open it."""
+        self.close_start()
+        for w in self.wins:
+            if w.title == "HYPERIA Store":
+                w.restore(); return w
+        return self.launch("HYPERIA Store")
+
     def launch(self, name):
         for n, g, col, url in WEB_APPS:
             if n == name: return open_web(url, n)
@@ -634,6 +647,8 @@ class Shell(tk.Tk):
     def focus_win(self, w):
         for b in self.tasks.winfo_children():
             b.configure(bg=CARD2 if getattr(b, "win", None) is w else "#0b0b0c")
+        if getattr(self, "store_pin", None) is not None:
+            self.store_pin.configure(bg=CARD2 if getattr(w, "title", None) == "HYPERIA Store" else "#0b0b0c")
 
     def refresh_task(self):
         for b in self.tasks.winfo_children(): b.destroy()
