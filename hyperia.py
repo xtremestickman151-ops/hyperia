@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 APP = "HYPERIA"
-APP_VERSION = "1.1.7"
+APP_VERSION = "1.1.8"
 COPYRIGHT = "\u00a92026 EX Inc."
 UPDATE_URL = "https://raw.githubusercontent.com/xtremestickman151-ops/hyperia/main/latest.json"
 NOWIN = 0x08000000
@@ -32,7 +32,6 @@ WEB_APPS = [
     ("Xbox", "X", "#107c10", "https://www.xbox.com"),
     ("Cloud Gaming", "☁", "#107c10", "https://www.xbox.com/play"),
     ("Google Earth", "🌍", "#34a853", "https://earth.google.com/web"),
-    ("Community", "☺", "#afd067", "https://github.com/xtremestickman151-ops/hyperia/discussions"),
 ]
 NATIVE_APPS = [
     ("HYPERIA Store", "▦", GREEN), ("Files", "▤", "#e5a524"), ("Terminal", ">_", "#3a3a3d"),
