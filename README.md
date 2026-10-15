@@ -2,7 +2,7 @@
 
 A creative **desktop shell** for Windows from EX Inc.: wallpaper, taskbar, Start menu, desktop icons and windows that open inside the shell.
 
-**Honest note:** HYPERIA is an app that runs on Windows. It is **not** a real operating system or kernel. Web apps open the real websites (in a HYPERIA web window using Microsoft Edge WebView2, or your default browser); HYPERIA does not copy or host their content.
+**Honest note:** HYPERIA is an app that runs on Windows. It is **not** a real operating system or kernel. Web apps open the real websites only in a HYPERIA web window (requires the Microsoft Edge WebView2 Runtime, standard on Windows 10/11); HYPERIA does not copy or host their content.
 
 ## Apps
 - **Built in:** HYPERIA Store, Files, Terminal (PowerShell), Settings (wallpaper, fullscreen, updates), Clock, Pong, **Fireout 1997** (original retro top-down racer), About.

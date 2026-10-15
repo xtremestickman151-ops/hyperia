@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 APP = "HYPERIA"
-APP_VERSION = "1.1.0"
+APP_VERSION = "1.1.1"
 COPYRIGHT = "\u00a92026 EX Inc."
 UPDATE_URL = "https://raw.githubusercontent.com/xtremestickman151-ops/hyperia/main/latest.json"
 NOWIN = 0x08000000
@@ -64,8 +64,35 @@ def check_update():
     return "latest", "You have the latest version (%s)." % APP_VERSION
 
 
+WEBVIEW2_GUID = "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
+WEBVIEW2_MSG = ("Microsoft Edge WebView2 Runtime is required to open web apps in HYPERIA.\n\n"
+                "Install it from Microsoft (search \"WebView2 Runtime\" or visit\n"
+                "developer.microsoft.com/microsoft-edge/webview2), then try again.")
+
+
+def webview2_installed():
+    if os.name != "nt": return False
+    try:
+        import winreg
+        keys = [(winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\WOW6432Node\\Microsoft\\EdgeUpdate\\Clients\\" + WEBVIEW2_GUID),
+                (winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\EdgeUpdate\\Clients\\" + WEBVIEW2_GUID),
+                (winreg.HKEY_CURRENT_USER, "Software\\Microsoft\\EdgeUpdate\\Clients\\" + WEBVIEW2_GUID)]
+        for root, path in keys:
+            try:
+                with winreg.OpenKey(root, path) as k:
+                    v, _ = winreg.QueryValueEx(k, "pv")
+                    if v and v != "0.0.0.0": return True
+            except OSError:
+                pass
+    except Exception:
+        pass
+    return False
+
+
 def open_web(url, title):
-    """Open URL in its own HYPERIA web window (pywebview / Edge WebView2); fall back to default browser."""
+    """Open URL in its own HYPERIA web window (Edge WebView2 only, no system-browser fallback)."""
+    if not webview2_installed():
+        messagebox.showerror(APP, WEBVIEW2_MSG); return False
     try:
         if getattr(sys, "frozen", False):
             cmd = [sys.executable, "--web", url, title]
@@ -73,17 +100,19 @@ def open_web(url, title):
             cmd = [sys.executable, os.path.abspath(__file__), "--web", url, title]
         subprocess.Popen(cmd, creationflags=NOWIN if os.name == "nt" else 0)
         return True
-    except Exception:
-        webbrowser.open(url); return False
+    except Exception as e:
+        messagebox.showerror(APP, "Could not open the HYPERIA web window:\n%s" % e); return False
 
 
 def web_main(url, title):
     try:
+        if not webview2_installed(): raise RuntimeError("WebView2 missing")
         import webview
         webview.create_window("HYPERIA · " + title, url, width=1200, height=800)
-        webview.start()
-    except Exception:
-        webbrowser.open(url)
+        webview.start(gui="edgechromium")
+    except Exception as e:
+        r = tk.Tk(); r.withdraw()
+        messagebox.showerror(APP, WEBVIEW2_MSG + "\n\nDetails: %s" % e); r.destroy()
 
 
 def rrect(c, x1, y1, x2, y2, r, **kw):
@@ -159,9 +188,8 @@ class WebHost(Win):
         tk.Label(b, text=name, bg=PANEL, fg=TXT, font=(FONT, 15, "bold")).pack()
         tk.Label(b, text=url, bg=PANEL, fg=MUT, font=(FONT, 9)).pack(pady=(2, 12))
         row = tk.Frame(b, bg=PANEL); row.pack()
-        Pill(row, "Open in HYPERIA", lambda: (open_web(url, name), self.close()), w=160, bg=PANEL).pack(side="left", padx=6)
-        Pill(row, "Default browser", lambda: webbrowser.open(url), w=150, fill=CARD2, fg=TXT, bg=PANEL).pack(side="left", padx=6)
-        tk.Label(b, text="Web apps open in a HYPERIA web window (Microsoft Edge WebView2).",
+        Pill(row, "Open in HYPERIA", lambda: open_web(url, name) and self.close(), w=180, bg=PANEL).pack(side="left", padx=6)
+        tk.Label(b, text="Web apps open only in a HYPERIA web window (requires Microsoft Edge WebView2 Runtime).",
                  bg=PANEL, fg=MUT, font=(FONT, 8)).pack(pady=(12, 0))
 
 
@@ -438,7 +466,7 @@ class About(Win):
         tk.Label(b, text="HYPERIA  %s" % APP_VERSION, bg=PANEL, fg=TXT, font=(FONT, 16, "bold")).pack()
         tk.Label(b, text="HYPERIA is a creative desktop shell that runs as an app on Windows.\n"
                  "It is not a real operating system or kernel. Web apps open the real sites\n"
-                 "in a HYPERIA web window or your browser; games and tools are built in.",
+                 "in a HYPERIA web window (Edge WebView2); games and tools are built in.",
                  bg=PANEL, fg=MUT, font=(FONT, 9), justify="center").pack(pady=8)
         box = tk.Canvas(b, width=170, height=30, bg=PANEL, highlightthickness=0); box.pack(pady=4)
         rrect(box, 1, 1, 169, 29, 9, fill=CARD, outline=BORDER); box.create_text(85, 15, text=COPYRIGHT, fill="#c7c7cc", font=(FONT, 9))
