@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 APP = "HYPERIA"
-APP_VERSION = "1.1.11"
+APP_VERSION = "1.1.12"
 COPYRIGHT = "\u00a92026 EX Inc."
 UPDATE_URL = "https://raw.githubusercontent.com/xtremestickman151-ops/hyperia/main/latest.json"
 NOWIN = 0x08000000
@@ -575,7 +575,6 @@ class Shell(tk.Tk):
         Pill(foot, "⟳ Check for updates", lambda: (self.close_start(), self.check_updates()), w=160, h=28, fill=GREEN, fg="#0a1200").pack(side="left", padx=6)
         self.fs_pill = Pill(foot, self.full_btn_text(), lambda: (self.close_start(), self.toggle_full()), w=110, h=28, fill=CARD2, fg=TXT)
         self.fs_pill.pack(side="left", padx=6)
-        Pill(foot, "Exit HYPERIA", self.quit_shell, w=120, h=28, fill="#3a1d1d", fg="#ffb3b3").pack(side="right")
 
     # ---------- windows ----------
     def launch(self, name):
