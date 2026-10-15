@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 APP = "HYPERIA"
-APP_VERSION = "1.1.10"
+APP_VERSION = "1.1.11"
 COPYRIGHT = "\u00a92026 EX Inc."
 UPDATE_URL = "https://raw.githubusercontent.com/xtremestickman151-ops/hyperia/main/latest.json"
 NOWIN = 0x08000000
@@ -125,6 +125,9 @@ class Pill(tk.Canvas):
         self.t, self.f, self.fg = text, fill, fg
         self.bind("<Button-1>", lambda e: cmd()); self.bind("<Enter>", lambda e: self.draw(1)); self.bind("<Leave>", lambda e: self.draw())
         self.draw()
+
+    def set_text(self, text):
+        self.t = text; self.draw()
 
     def draw(self, hover=0):
         self.delete("all"); w, h = int(self["width"]), int(self["height"])
@@ -477,16 +480,17 @@ class Shell(tk.Tk):
         upd = tk.Label(self.task, text=" ⟳ Updates ", bg="#0b0b0c", fg=GREEN, font=(FONT, 9, "bold"), cursor="hand2")
         upd.pack(side="right", padx=4); upd.bind("<Button-1>", lambda e: self.check_updates())
         upd.bind("<Enter>", lambda e: upd.configure(bg=CARD2)); upd.bind("<Leave>", lambda e: upd.configure(bg="#0b0b0c"))
-        fs = tk.Label(self.task, text=" Full screen ", bg="#0b0b0c", fg=TXT, font=(FONT, 9, "bold"), cursor="hand2")
-        fs.pack(side="right", padx=4); fs.bind("<Button-1>", lambda e: self.toggle_full())
-        fs.bind("<Enter>", lambda e: fs.configure(bg=CARD2)); fs.bind("<Leave>", lambda e: fs.configure(bg="#0b0b0c"))
+        self.fs_btn = tk.Label(self.task, text=" Full screen ", bg="#0b0b0c", fg=TXT, font=(FONT, 9, "bold"), cursor="hand2")
+        self.fs_btn.pack(side="right", padx=4); self.fs_btn.bind("<Button-1>", lambda e: self.toggle_full())
+        self.fs_btn.bind("<Enter>", lambda e: self.fs_btn.configure(bg=CARD2)); self.fs_btn.bind("<Leave>", lambda e: self.fs_btn.configure(bg="#0b0b0c"))
+        self.fs_pill = None
         tk.Label(self.task, text=COPYRIGHT, bg="#0b0b0c", fg=MUT, font=(FONT, 8)).pack(side="right", padx=8)
 
         self.desk.bind("<Configure>", lambda e: self.draw_desk())
         self.desk.bind("<Button-1>", lambda e: self.close_start())
         self.bind("<F11>", lambda e: self.toggle_full()); self.bind("<Escape>", lambda e: self.close_start())
         self.bind("<Super_L>", lambda e: self.toggle_start())
-        self.startmenu = None; self.tick()
+        self.startmenu = None; self.sync_full_label(); self.tick()
         if os.environ.get("HYPERIA_DEMO"):  # used only for screenshots
             self.after(1200, lambda: (self.open_start(), self.launch("HYPERIA Store")))
 
@@ -533,7 +537,7 @@ class Shell(tk.Tk):
         else: self.open_start()
 
     def close_start(self):
-        if self.startmenu: self.startmenu.destroy(); self.startmenu = None
+        if self.startmenu: self.startmenu.destroy(); self.startmenu = None; self.fs_pill = None
 
     def open_start(self):
         m = tk.Frame(self, bg=CARD, highlightthickness=1, highlightbackground=BORDER)
@@ -569,7 +573,8 @@ class Shell(tk.Tk):
         foot = tk.Frame(m, bg=CARD); foot.pack(fill="x", padx=14, pady=8)
         Pill(foot, "Settings", lambda: (self.close_start(), self.launch("Settings")), w=100, h=28, fill=CARD2, fg=TXT).pack(side="left")
         Pill(foot, "⟳ Check for updates", lambda: (self.close_start(), self.check_updates()), w=160, h=28, fill=GREEN, fg="#0a1200").pack(side="left", padx=6)
-        Pill(foot, "Full screen", lambda: (self.close_start(), self.toggle_full()), w=110, h=28, fill=CARD2, fg=TXT).pack(side="left", padx=6)
+        self.fs_pill = Pill(foot, self.full_btn_text(), lambda: (self.close_start(), self.toggle_full()), w=110, h=28, fill=CARD2, fg=TXT)
+        self.fs_pill.pack(side="left", padx=6)
         Pill(foot, "Exit HYPERIA", self.quit_shell, w=120, h=28, fill="#3a1d1d", fg="#ffb3b3").pack(side="right")
 
     # ---------- windows ----------
@@ -598,8 +603,23 @@ class Shell(tk.Tk):
             b.win = w; b.pack(side="left", padx=2, pady=8, fill="y")
             b.bind("<Button-1>", lambda e, w=w: w.restore())
 
+    def full_btn_text(self):
+        return "Windowed" if self.full else "Full screen"
+
+    def sync_full_label(self):
+        label = self.full_btn_text()
+        if getattr(self, "fs_btn", None) is not None:
+            self.fs_btn.configure(text=" %s " % label)
+        if getattr(self, "fs_pill", None) is not None:
+            try:
+                self.fs_pill.set_text(label)
+            except tk.TclError:
+                self.fs_pill = None
+
     def toggle_full(self):
-        self.full = not self.full; self.attributes("-fullscreen", self.full)
+        self.full = not self.full
+        self.attributes("-fullscreen", self.full)
+        self.sync_full_label()
 
     def check_updates(self):
         def job():
