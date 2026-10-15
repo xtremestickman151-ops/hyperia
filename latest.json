@@ -1,8 +1,8 @@
 {
-  "version": "1.1.18",
-  "url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.18/HYPERIA.Setup.1.1.18.exe",
-  "full_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.18/HYPERIA.zip",
-  "installer_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.18/HYPERIA.Setup.1.1.18.exe",
-  "update_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.18/HYPERIA-update-1.1.18.zip",
-  "notes": "New Notebook app for text notes (New / Open / Save)."
+  "version": "1.1.19",
+  "url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.19/HYPERIA.Setup.1.1.19.exe",
+  "full_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.19/HYPERIA.zip",
+  "installer_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.19/HYPERIA.Setup.1.1.19.exe",
+  "update_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.19/HYPERIA-update-1.1.19.zip",
+  "notes": "Web apps show Exit to HYPERIA (closes that window, returns to the shell)."
 }
