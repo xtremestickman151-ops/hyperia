@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 APP = "HYPERIA"
-APP_VERSION = "1.1.1"
+APP_VERSION = "1.1.2"
 COPYRIGHT = "\u00a92026 EX Inc."
 UPDATE_URL = "https://raw.githubusercontent.com/xtremestickman151-ops/hyperia/main/latest.json"
 NOWIN = 0x08000000
@@ -176,21 +176,6 @@ class Win(tk.Frame):
 
     def on_close(self):
         pass
-
-
-class WebHost(Win):
-    def __init__(self, shell, name, glyph, color, url):
-        super().__init__(shell, name, 520, 300)
-        b = self.body
-        c = tk.Canvas(b, width=80, height=80, bg=PANEL, highlightthickness=0); c.pack(pady=(24, 8))
-        rrect(c, 4, 4, 76, 76, 18, fill=color, outline="")
-        c.create_text(40, 40, text=glyph, fill="white", font=(FONT, 26, "bold"))
-        tk.Label(b, text=name, bg=PANEL, fg=TXT, font=(FONT, 15, "bold")).pack()
-        tk.Label(b, text=url, bg=PANEL, fg=MUT, font=(FONT, 9)).pack(pady=(2, 12))
-        row = tk.Frame(b, bg=PANEL); row.pack()
-        Pill(row, "Open in HYPERIA", lambda: open_web(url, name) and self.close(), w=180, bg=PANEL).pack(side="left", padx=6)
-        tk.Label(b, text="Web apps open only in a HYPERIA web window (requires Microsoft Edge WebView2 Runtime).",
-                 bg=PANEL, fg=MUT, font=(FONT, 8)).pack(pady=(12, 0))
 
 
 class Files(Win):
@@ -585,7 +570,7 @@ class Shell(tk.Tk):
     # ---------- windows ----------
     def launch(self, name):
         for n, g, col, url in WEB_APPS:
-            if n == name: return WebHost(self, n, g, col, url)
+            if n == name: return open_web(url, n)
         cls = {"HYPERIA Store": Store, "Files": Files, "Terminal": Terminal, "Settings": Settings, "Clock": Clock,
                "Pong": Pong, "Fireout 1997": Fireout, "About": About}.get(name)
         if cls: return cls(self)
