@@ -1,8 +1,8 @@
 {
-  "version": "1.1.11",
-  "url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.11/HYPERIA.Setup.1.1.11.exe",
-  "full_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.11/HYPERIA.zip",
-  "installer_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.11/HYPERIA.Setup.1.1.11.exe",
-  "update_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.11/HYPERIA-update-1.1.11.zip",
-  "notes": "Full screen button shows Windowed while fullscreen (taskbar and Start menu)."
+  "version": "1.1.12",
+  "url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.12/HYPERIA.Setup.1.1.12.exe",
+  "full_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.12/HYPERIA.zip",
+  "installer_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.12/HYPERIA.Setup.1.1.12.exe",
+  "update_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.12/HYPERIA-update-1.1.12.zip",
+  "notes": "Removed Exit HYPERIA from the Start menu."
 }
