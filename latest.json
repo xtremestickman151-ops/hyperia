@@ -1,7 +1,7 @@
 {
-  "version": "1.1.6",
-  "url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.6/HYPERIA.Setup.1.1.6.exe",
-  "full_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.6/HYPERIA.zip",
-  "installer_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.6/HYPERIA.Setup.1.1.6.exe",
-  "notes": "New icon for the Browser app."
+  "version": "1.1.7",
+  "url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.7/HYPERIA.Setup.1.1.7.exe",
+  "full_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.7/HYPERIA.zip",
+  "installer_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.7/HYPERIA.Setup.1.1.7.exe",
+  "notes": "The Browser app is now called EX SAFARIA LITE."
 }
