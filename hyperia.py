@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 APP = "HYPERIA"
-APP_VERSION = "1.1.6"
+APP_VERSION = "1.1.7"
 COPYRIGHT = "\u00a92026 EX Inc."
 UPDATE_URL = "https://raw.githubusercontent.com/xtremestickman151-ops/hyperia/main/latest.json"
 NOWIN = 0x08000000
@@ -16,7 +16,7 @@ FONT, MONO = "Segoe UI", "Consolas"
 
 # name, icon glyph, colour, url (None = native app)
 WEB_APPS = [
-    ("Browser", "◎", "#4a90d9", "https://duckduckgo.com"),
+    ("EX SAFARIA LITE", "◎", "#4a90d9", "https://duckduckgo.com"),
     ("YouTube", "▶", "#ff3b30", "https://www.youtube.com"),
     ("Discord", "◉", "#5865f2", "https://discord.com/app"),
     ("Steam", "♨", "#1b2838", "https://store.steampowered.com"),
@@ -440,7 +440,7 @@ class Store(Win):
                 tk.Label(f, image=shell.app_img[n][1], bg=CARD, width=34).pack(side="left", padx=6, pady=6)
             else:
                 tk.Label(f, text=g, bg=col, fg="white", font=(FONT, 11, "bold"), width=3).pack(side="left", padx=6, pady=6)
-            tk.Label(f, text=n, bg=CARD, fg=TXT, font=(FONT, 9), width=13, anchor="w").pack(side="left")
+            tk.Label(f, text=n, bg=CARD, fg=TXT, font=(FONT, 9), width=16, anchor="w").pack(side="left")
             for w in (f,) + tuple(f.winfo_children()):
                 w.bind("<Button-1>", lambda e, n=n: shell.launch(n))
         for c in range(4): grid.columnconfigure(c, weight=1)
@@ -459,7 +459,7 @@ class Shell(tk.Tk):
             self.logo_big = self.logo_small = None
         self.app_img = {}
         try:
-            self.app_img["Browser"] = (tk.PhotoImage(file=res_path("browser48.png")), tk.PhotoImage(file=res_path("browser22.png")))
+            self.app_img["EX SAFARIA LITE"] = (tk.PhotoImage(file=res_path("browser48.png")), tk.PhotoImage(file=res_path("browser22.png")))
         except Exception:
             pass
         try: self.state("zoomed")

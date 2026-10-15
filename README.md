@@ -6,7 +6,7 @@ A creative **desktop shell** for Windows from EX Inc.: wallpaper, taskbar, Start
 
 ## Apps
 - **Built in:** HYPERIA Store, Files, Terminal (PowerShell), Settings (wallpaper, fullscreen, updates), Clock, Pong, **Fireout 1997** (original retro top-down racer).
-- **Web:** Browser, YouTube, Discord, Steam, itch.io, Speed Test, Reddit, Wikipedia, Twitch, Weather, Sport, Amazon, Temu, Xbox, Cloud Gaming, Google Earth, Community.
+- **Web:** EX SAFARIA LITE (browser), YouTube, Discord, Steam, itch.io, Speed Test, Reddit, Wikipedia, Twitch, Weather, Sport, Amazon, Temu, Xbox, Cloud Gaming, Google Earth, Community.
 
 Shortcuts: F11 fullscreen, Esc closes the Start menu.
 
