@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import messagebox, filedialog
 
 APP = "HYPERIA"
-APP_VERSION = "1.1.21"
+APP_VERSION = "1.1.22"
 COPYRIGHT = "\u00a92026 EX Inc."
 UPDATE_URL = "https://raw.githubusercontent.com/xtremestickman151-ops/hyperia/main/latest.json"
 NOWIN = 0x08000000
@@ -111,15 +111,18 @@ def web_main(url, title):
         win_holder = {"w": None}
 
         def focus_hyperia_shell():
+            """Raise the main HYPERIA shell without minimising or un-maximising it."""
             if os.name != "nt":
                 return
             try:
                 import ctypes
                 user32 = ctypes.windll.user32
+                SW_SHOW, SW_RESTORE = 5, 9
                 try:
                     user32.AllowSetForegroundWindow(-1)
                 except Exception:
                     pass
+                # Exact title "HYPERIA" only — never "HYPERIA · YouTube" web windows.
                 hwnd = user32.FindWindowW(None, APP)
                 if not hwnd:
                     found = []
@@ -130,8 +133,7 @@ def web_main(url, title):
                             n = user32.GetWindowTextLengthW(h) + 1
                             buf = ctypes.create_unicode_buffer(n)
                             user32.GetWindowTextW(h, buf, n)
-                            title = buf.value or ""
-                            if title == APP or title.startswith(APP + " "):
+                            if (buf.value or "") == APP and user32.IsWindowVisible(h):
                                 found.append(h)
                         except Exception:
                             pass
@@ -139,23 +141,33 @@ def web_main(url, title):
 
                     user32.EnumWindows(_enum, 0)
                     hwnd = found[0] if found else None
-                if hwnd:
-                    user32.ShowWindow(hwnd, 9)  # SW_RESTORE
-                    user32.BringWindowToTop(hwnd)
-                    user32.SetForegroundWindow(hwnd)
+                if not hwnd:
+                    return
+                # SW_RESTORE un-maximises a zoomed shell; only use it when iconic.
+                if user32.IsIconic(hwnd):
+                    user32.ShowWindow(hwnd, SW_RESTORE)
+                else:
+                    user32.ShowWindow(hwnd, SW_SHOW)
+                user32.BringWindowToTop(hwnd)
+                try:
+                    user32.SetWindowPos(hwnd, -1, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0040)  # HWND_TOPMOST, NOSIZE|NOMOVE|SHOWWINDOW
+                    user32.SetWindowPos(hwnd, -2, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0040)  # HWND_NOTOPMOST
+                except Exception:
+                    pass
+                user32.SetForegroundWindow(hwnd)
             except Exception:
                 pass
 
         class Api(object):
             def exit_to_hyperia(self):
                 """Close this web window only and return focus to the HYPERIA shell."""
-                focus_hyperia_shell()
                 w = win_holder.get("w")
                 try:
                     if w is not None:
                         w.destroy()
                 except Exception:
                     pass
+                # Only this --web helper's windows; do not touch the shell process.
                 try:
                     for ww in list(getattr(webview, "windows", []) or []):
                         try:
@@ -165,9 +177,13 @@ def web_main(url, title):
                 except Exception:
                     pass
                 focus_hyperia_shell()
-                # This process is only the web helper (--web); end it if destroy stalled.
                 try:
-                    threading.Timer(0.35, lambda: os._exit(0)).start()
+                    threading.Timer(0.15, focus_hyperia_shell).start()
+                except Exception:
+                    pass
+                # End only this web helper process if destroy stalled.
+                try:
+                    threading.Timer(0.4, lambda: os._exit(0)).start()
                 except Exception:
                     pass
                 return True
