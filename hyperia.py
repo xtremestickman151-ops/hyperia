@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 APP = "HYPERIA"
-APP_VERSION = "1.1.13"
+APP_VERSION = "1.1.14"
 COPYRIGHT = "\u00a92026 EX Inc."
 UPDATE_URL = "https://raw.githubusercontent.com/xtremestickman151-ops/hyperia/main/latest.json"
 NOWIN = 0x08000000
@@ -16,6 +16,7 @@ FONT, MONO = "Segoe UI", "Consolas"
 
 # name, icon glyph, colour, url (None = native app)
 WEB_APPS = [
+    ("EX SAFARIA LITE", "◎", "#4a90d9", "https://duckduckgo.com"),
     ("YouTube", "▶", "#ff3b30", "https://www.youtube.com"),
     ("Discord", "◉", "#5865f2", "https://discord.com/app"),
     ("Steam", "♨", "#1b2838", "https://store.steampowered.com"),
@@ -33,8 +34,7 @@ WEB_APPS = [
     ("Google Earth", "🌍", "#34a853", "https://earth.google.com/web"),
 ]
 NATIVE_APPS = [
-    ("HYPERIA Store", "▦", GREEN), ("EX SAFARIA LITE", "◎", "#4a90d9"),
-    ("Files", "▤", "#e5a524"), ("Terminal", ">_", "#3a3a3d"),
+    ("HYPERIA Store", "▦", GREEN), ("Files", "▤", "#e5a524"), ("Terminal", ">_", "#3a3a3d"),
     ("Settings", "⚙", "#8e8e93"), ("Clock", "◷", "#5ac8fa"), ("Pong", "▮", "#ffffff"),
     ("Fireout 1997", "🔥", "#ff453a"),
 ]
@@ -44,41 +44,6 @@ def res_path(name):
     base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base, name)
 
-
-def safaria_exe_path():
-    """Locate bundled EX SAFARIA.exe (next to HYPERIA.exe, _MEIPASS, or ./bundled in source)."""
-    name = "EX SAFARIA.exe"
-    cands = []
-    if getattr(sys, "frozen", False):
-        cands.append(os.path.join(os.path.dirname(sys.executable), name))
-        meipass = getattr(sys, "_MEIPASS", None)
-        if meipass:
-            cands.append(os.path.join(meipass, name))
-    else:
-        here = os.path.dirname(os.path.abspath(__file__))
-        cands.append(os.path.join(here, "bundled", name))
-        cands.append(os.path.join(here, name))
-    for c in cands:
-        if c and os.path.isfile(c):
-            return c
-    return None
-
-
-def open_safaria():
-    """Launch the bundled EX SAFARIA browser (separate .NET + WebView2 app)."""
-    path = safaria_exe_path()
-    if not path:
-        messagebox.showerror(APP, "EX SAFARIA was not found.\n\nReinstall HYPERIA or use Check for updates.")
-        return False
-    try:
-        kw = {"cwd": os.path.dirname(path)}
-        if os.name == "nt":
-            kw["creationflags"] = NOWIN
-        subprocess.Popen([path], **kw)
-        return True
-    except Exception as e:
-        messagebox.showerror(APP, "Could not start EX SAFARIA.\n\n%s" % e)
-        return False
 
 
 def vtuple(v):
@@ -614,8 +579,6 @@ class Shell(tk.Tk):
 
     # ---------- windows ----------
     def launch(self, name):
-        if name == "EX SAFARIA LITE":
-            return open_safaria()
         for n, g, col, url in WEB_APPS:
             if n == name: return open_web(url, n)
         cls = {"HYPERIA Store": Store, "Files": Files, "Terminal": Terminal, "Settings": Settings, "Clock": Clock,
