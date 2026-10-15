@@ -1,8 +1,8 @@
 {
-  "version": "1.1.21",
-  "url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.21/HYPERIA.Setup.1.1.21.exe",
-  "full_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.21/HYPERIA.zip",
-  "installer_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.21/HYPERIA.Setup.1.1.21.exe",
-  "update_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.21/HYPERIA-update-1.1.21.zip",
-  "notes": "Exit to HYPERIA restyled (EXOS pill) and click-to-return hardened."
+  "version": "1.1.22",
+  "url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.22/HYPERIA.Setup.1.1.22.exe",
+  "full_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.22/HYPERIA.zip",
+  "installer_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.22/HYPERIA.Setup.1.1.22.exe",
+  "update_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.22/HYPERIA-update-1.1.22.zip",
+  "notes": "Exit to HYPERIA no longer minimises the shell; closes only the web window."
 }
