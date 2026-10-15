@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 APP = "HYPERIA"
-APP_VERSION = "1.1.4"
+APP_VERSION = "1.1.5"
 COPYRIGHT = "\u00a92026 EX Inc."
 UPDATE_URL = "https://raw.githubusercontent.com/xtremestickman151-ops/hyperia/main/latest.json"
 NOWIN = 0x08000000
@@ -426,7 +426,6 @@ class Settings(Win):
         tk.Label(b, text="Updates", bg=PANEL, fg=TXT, font=(FONT, 12, "bold")).pack(anchor="w", padx=16, pady=(18, 4))
         Pill(b, "Check for updates", shell.check_updates, w=180, bg=PANEL).pack(anchor="w", padx=16)
         tk.Label(b, text="HYPERIA %s · %s" % (APP_VERSION, COPYRIGHT), bg=PANEL, fg=MUT, font=(FONT, 9)).pack(anchor="w", padx=16, pady=(18, 0))
-        tk.Label(b, text="A creative desktop shell that runs on Windows, not a real operating system.", bg=PANEL, fg=MUT, font=(FONT, 8)).pack(anchor="w", padx=16)
 
 
 class Store(Win):
@@ -499,7 +498,6 @@ class Shell(tk.Tk):
         if self.logo_big:
             d.create_image(w / 2, h / 2 - 20, image=self.logo_big, tags="wall")
         d.create_text(w / 2, h / 2 + 120, text="HYPERIA", fill=GREEN, font=(FONT, 30, "bold"), tags="wall")
-        d.create_text(w / 2, h / 2 + 156, text="creative desktop shell", fill=MUT, font=(FONT, 11), tags="wall")
         icons = [(n, g, c) for n, g, c in NATIVE_APPS] + [(n, g, c) for n, g, c, _ in WEB_APPS]
         per_col = max(1, int((h - 20) // 92))
         for i, (n, g, col) in enumerate(icons):
