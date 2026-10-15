@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 APP = "HYPERIA"
-APP_VERSION = "1.1.15"
+APP_VERSION = "1.1.16"
 COPYRIGHT = "\u00a92026 EX Inc."
 UPDATE_URL = "https://raw.githubusercontent.com/xtremestickman151-ops/hyperia/main/latest.json"
 NOWIN = 0x08000000
@@ -138,14 +138,23 @@ class Pill(tk.Canvas):
 
 class Win(tk.Frame):
     """A window living inside the HYPERIA desktop."""
-    def __init__(self, shell, title, w=640, h=440):
+    def __init__(self, shell, title, w=640, h=440, maximizable=False):
         super().__init__(shell.desk, bg=BORDER, bd=0)
         self.shell, self.title = shell, title
+        self._maximized = False
+        self._norm = None
+        self._max_btn = None
+        self._place_w, self._place_h = w, h
         bar = tk.Frame(self, bg=CARD2, height=32); bar.pack(fill="x", padx=1, pady=(1, 0))
         tk.Label(bar, text="  " + title, bg=CARD2, fg=TXT, font=(FONT, 10, "bold")).pack(side="left")
         x = tk.Label(bar, text="  ✕  ", bg=CARD2, fg=TXT, font=(FONT, 10), cursor="hand2"); x.pack(side="right")
         x.bind("<Button-1>", lambda e: self.close())
         x.bind("<Enter>", lambda e: x.configure(bg="#c42b1c")); x.bind("<Leave>", lambda e: x.configure(bg=CARD2))
+        if maximizable:
+            mx = tk.Label(bar, text="  □  ", bg=CARD2, fg=TXT, font=(FONT, 10), cursor="hand2"); mx.pack(side="right")
+            mx.bind("<Button-1>", lambda e: self.toggle_maximize())
+            mx.bind("<Enter>", lambda e: mx.configure(bg="#3a3a3d")); mx.bind("<Leave>", lambda e: mx.configure(bg=CARD2))
+            self._max_btn = mx
         m = tk.Label(bar, text="  —  ", bg=CARD2, fg=TXT, font=(FONT, 10), cursor="hand2"); m.pack(side="right")
         m.bind("<Button-1>", lambda e: self.minimize())
         self.body = tk.Frame(self, bg=PANEL); self.body.pack(fill="both", expand=True, padx=1, pady=(0, 1))
@@ -157,20 +166,50 @@ class Win(tk.Frame):
         shell.add_win(self)
 
     def _press(self, e):
-        self.lift_(); self._dx, self._dy = e.x_root - self.winfo_x(), e.y_root - self.winfo_y()
+        self.lift_()
+        if self._maximized:
+            return
+        self._dx, self._dy = e.x_root - self.winfo_x(), e.y_root - self.winfo_y()
 
     def _drag(self, e):
+        if self._maximized:
+            return
         self.place(x=e.x_root - self._dx, y=max(0, e.y_root - self._dy))
 
     def lift_(self):
         self.lift(); self.shell.focus_win(self)
+
+    def toggle_maximize(self):
+        if self._maximized:
+            x, y, w, h = self._norm
+            self.place(x=x, y=y, width=w, height=h)
+            self._maximized = False
+            if self._max_btn is not None:
+                self._max_btn.configure(text="  □  ")
+        else:
+            self._norm = (self.winfo_x(), self.winfo_y(), self.winfo_width(), self.winfo_height())
+            dw = max(self.shell.desk.winfo_width(), 400)
+            dh = max(self.shell.desk.winfo_height(), 300)
+            self.place(x=0, y=0, width=dw, height=dh)
+            self._maximized = True
+            if self._max_btn is not None:
+                self._max_btn.configure(text="  ❐  ")
+        self.lift_()
 
     def minimize(self):
         self.place_forget(); self.hidden = True; self.shell.refresh_task()
 
     def restore(self):
         if getattr(self, "hidden", False):
-            self.place(x=140, y=80, width=self.winfo_reqwidth() or 640, height=self.winfo_reqheight() or 440)
+            if self._maximized and self._norm:
+                dw = max(self.shell.desk.winfo_width(), 400)
+                dh = max(self.shell.desk.winfo_height(), 300)
+                self.place(x=0, y=0, width=dw, height=dh)
+            elif self._norm:
+                x, y, w, h = self._norm
+                self.place(x=x, y=y, width=w, height=h)
+            else:
+                self.place(x=140, y=80, width=self._place_w, height=self._place_h)
             self.hidden = False
         self.lift_()
 
@@ -433,7 +472,7 @@ class Settings(Win):
 
 class Store(Win):
     def __init__(self, shell):
-        super().__init__(shell, "HYPERIA Store", 700, 470)
+        super().__init__(shell, "HYPERIA Store", 700, 470, maximizable=True)
         tk.Label(self.body, text="All apps", bg=PANEL, fg=TXT, font=(FONT, 14, "bold")).pack(anchor="w", padx=16, pady=(12, 6))
         grid = tk.Frame(self.body, bg=PANEL); grid.pack(fill="both", expand=True, padx=12)
         apps = [(n, g, c) for n, g, c in NATIVE_APPS if n != "HYPERIA Store"] + [(n, g, c) for n, g, c, _ in WEB_APPS]
