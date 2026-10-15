@@ -1,8 +1,8 @@
 {
-  "version": "1.1.9",
-  "url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.9/HYPERIA.Setup.1.1.9.exe",
-  "full_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.9/HYPERIA.zip",
-  "installer_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.9/HYPERIA.Setup.1.1.9.exe",
-  "update_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.9/HYPERIA-update-1.1.9.zip",
-  "notes": "Full screen button next to Check for updates (Start menu and Settings)."
+  "version": "1.1.10",
+  "url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.10/HYPERIA.Setup.1.1.10.exe",
+  "full_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.10/HYPERIA.zip",
+  "installer_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.10/HYPERIA.Setup.1.1.10.exe",
+  "update_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.10/HYPERIA-update-1.1.10.zip",
+  "notes": "Full screen on the bottom bar next to Updates (removed from Settings)."
 }
