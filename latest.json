@@ -1,8 +1,8 @@
 {
-  "version": "1.1.14",
-  "url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.14/HYPERIA.Setup.1.1.14.exe",
-  "full_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.14/HYPERIA.zip",
-  "installer_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.14/HYPERIA.Setup.1.1.14.exe",
-  "update_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.14/HYPERIA-update-1.1.14.zip",
-  "notes": "EX SAFARIA LITE again opens in a HYPERIA web window (DuckDuckGo), not the bundled EXE."
+  "version": "1.1.15",
+  "url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.15/HYPERIA.Setup.1.1.15.exe",
+  "full_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.15/HYPERIA.zip",
+  "installer_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.15/HYPERIA.Setup.1.1.15.exe",
+  "update_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.15/HYPERIA-update-1.1.15.zip",
+  "notes": "EX SAFARIA LITE homepage is now Bing."
 }
