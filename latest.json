@@ -1,8 +1,8 @@
 {
-  "version": "1.1.10",
-  "url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.10/HYPERIA.Setup.1.1.10.exe",
-  "full_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.10/HYPERIA.zip",
-  "installer_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.10/HYPERIA.Setup.1.1.10.exe",
-  "update_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.10/HYPERIA-update-1.1.10.zip",
-  "notes": "Full screen on the bottom bar next to Updates (removed from Settings)."
+  "version": "1.1.11",
+  "url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.11/HYPERIA.Setup.1.1.11.exe",
+  "full_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.11/HYPERIA.zip",
+  "installer_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.11/HYPERIA.Setup.1.1.11.exe",
+  "update_url": "https://github.com/xtremestickman151-ops/hyperia/releases/download/v1.1.11/HYPERIA-update-1.1.11.zip",
+  "notes": "Full screen button shows Windowed while fullscreen (taskbar and Start menu)."
 }
